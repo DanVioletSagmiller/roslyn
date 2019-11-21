@@ -17,7 +17,6 @@ using Microsoft.CodeAnalysis.Host;
 using Microsoft.CodeAnalysis.Test.Utilities;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.UnitTests;
-using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.VisualStudio.Composition;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Utilities;
@@ -55,131 +54,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
             {
                 return RuntimeHelpers.GetHashCode(this);
             }
-        }
-
-        public static TestWorkspace Create(string xmlDefinition, bool completed = true, bool openDocuments = false, ExportProvider exportProvider = null)
-        {
-            return Create(XElement.Parse(xmlDefinition), completed, openDocuments, exportProvider);
-        }
-
-        public static TestWorkspace CreateWorkspace(
-            XElement workspaceElement,
-            bool completed = true,
-            bool openDocuments = true,
-            ExportProvider exportProvider = null,
-            string workspaceKind = null)
-        {
-            return Create(workspaceElement, completed, openDocuments, exportProvider, workspaceKind);
-        }
-
-        internal static TestWorkspace Create(
-            XElement workspaceElement,
-            bool completed = true,
-            bool openDocuments = true,
-            ExportProvider exportProvider = null,
-            string workspaceKind = null,
-            IDocumentServiceProvider documentServiceProvider = null)
-        {
-            if (workspaceElement.Name != WorkspaceElementName)
-            {
-                throw new ArgumentException();
-            }
-
-            exportProvider ??= TestExportProvider.ExportProviderWithCSharpAndVisualBasic;
-
-            var workspace = new TestWorkspace(exportProvider, workspaceKind);
-
-            var projectNameToTestHostProject = new Dictionary<string, TestHostProject>();
-            var projectElementToProjectName = new Dictionary<XElement, string>();
-            var filePathToTextBufferMap = new Dictionary<string, ITextBuffer>();
-            var projectIdentifier = 0;
-            var documentIdentifier = 0;
-
-            foreach (var projectElement in workspaceElement.Elements(ProjectElementName))
-            {
-                var project = CreateProject(
-                    workspaceElement,
-                    projectElement,
-                    exportProvider,
-                    workspace,
-                    filePathToTextBufferMap,
-                    documentServiceProvider,
-                    ref projectIdentifier,
-                    ref documentIdentifier);
-                Assert.False(projectNameToTestHostProject.ContainsKey(project.Name), $"The workspace XML already contains a project with name {project.Name}");
-                projectNameToTestHostProject.Add(project.Name, project);
-                projectElementToProjectName.Add(projectElement, project.Name);
-                workspace.Projects.Add(project);
-            }
-
-            var documentFilePaths = new HashSet<string>();
-            foreach (var project in projectNameToTestHostProject.Values)
-            {
-                foreach (var document in project.Documents)
-                {
-                    Assert.True(document.IsLinkFile || documentFilePaths.Add(document.FilePath));
-
-                    workspace.Documents.Add(document);
-                }
-            }
-
-            var submissions = CreateSubmissions(workspace, workspaceElement.Elements(SubmissionElementName), exportProvider);
-
-            foreach (var submission in submissions)
-            {
-                projectNameToTestHostProject.Add(submission.Name, submission);
-                workspace.Documents.Add(submission.Documents.Single());
-            }
-
-            var solution = new TestHostSolution(projectNameToTestHostProject.Values.ToArray());
-            workspace.AddTestSolution(solution);
-
-            foreach (var projectElement in workspaceElement.Elements(ProjectElementName))
-            {
-                foreach (var projectReference in projectElement.Elements(ProjectReferenceElementName))
-                {
-                    var fromName = projectElementToProjectName[projectElement];
-                    var toName = projectReference.Value;
-
-                    var fromProject = projectNameToTestHostProject[fromName];
-                    var toProject = projectNameToTestHostProject[toName];
-
-                    var aliases = projectReference.Attributes(AliasAttributeName).Select(a => a.Value).ToImmutableArray();
-
-                    workspace.OnProjectReferenceAdded(fromProject.Id, new ProjectReference(toProject.Id, aliases.Any() ? aliases : default));
-                }
-            }
-
-            for (var i = 1; i < submissions.Count; i++)
-            {
-                if (submissions[i].CompilationOptions == null)
-                {
-                    continue;
-                }
-
-                for (var j = i - 1; j >= 0; j--)
-                {
-                    if (submissions[j].CompilationOptions != null)
-                    {
-                        workspace.OnProjectReferenceAdded(submissions[i].Id, new ProjectReference(submissions[j].Id));
-                        break;
-                    }
-                }
-            }
-
-            foreach (var project in projectNameToTestHostProject.Values)
-            {
-                foreach (var document in project.Documents)
-                {
-                    if (openDocuments)
-                    {
-                        // This implicitly opens the document in the workspace by fetching the container.
-                        document.GetOpenTextContainer();
-                    }
-                }
-            }
-
-            return workspace;
         }
 
         private static IList<TestHostProject> CreateSubmissions(
@@ -396,11 +270,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
             {
                 return new CSharpParseOptions(preprocessorSymbols: preprocessorSymbolsAttribute.Value.Split(','));
             }
-            else if (language == LanguageNames.VisualBasic)
-            {
-                return new VisualBasicParseOptions(preprocessorSymbols: preprocessorSymbolsAttribute.Value
-                    .Split(',').Select(v => KeyValuePairUtil.Create(v.Split('=').ElementAt(0), (object)v.Split('=').ElementAt(1))).ToImmutableArray());
-            }
             else
             {
                 throw new ArgumentException("Unexpected language '{0}' for generating custom parse options.", language);
@@ -429,11 +298,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
             {
                 var languageVersion = (CodeAnalysis.CSharp.LanguageVersion)Enum.Parse(typeof(CodeAnalysis.CSharp.LanguageVersion), languageVersionAttribute.Value);
                 parseOptions = ((CSharpParseOptions)parseOptions).WithLanguageVersion(languageVersion);
-            }
-            else if (language == LanguageNames.VisualBasic)
-            {
-                var languageVersion = (CodeAnalysis.VisualBasic.LanguageVersion)Enum.Parse(typeof(CodeAnalysis.VisualBasic.LanguageVersion), languageVersionAttribute.Value);
-                parseOptions = ((VisualBasicParseOptions)parseOptions).WithLanguageVersion(languageVersion);
             }
 
             return parseOptions;
@@ -487,16 +351,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
             var language = GetLanguage(workspace, projectElement);
             var rootNamespaceAttribute = projectElement.Attribute(RootNamespaceAttributeName);
 
-            if (GetLanguage(workspace, projectElement) == LanguageNames.VisualBasic)
-            {
-                // For VB tests, root namespace value must be defined in compilation options element, 
-                // it can't use the property in project element to avoid confusion.
-                Assert.Null(rootNamespaceAttribute);
-
-                var vbCompilationOptions = (VisualBasicCompilationOptions)compilationOptions;
-                return vbCompilationOptions.RootNamespace;
-            }
-
             // If it's not defined, default to "" (global namespace)
             return rootNamespaceAttribute?.Value ?? string.Empty;
         }
@@ -508,147 +362,10 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
             ParseOptions parseOptions)
         {
             var compilationOptionsElement = projectElement.Element(CompilationOptionsElementName);
-            return language == LanguageNames.CSharp || language == LanguageNames.VisualBasic
-                ? CreateCompilationOptions(workspace, language, compilationOptionsElement, parseOptions)
-                : null;
-        }
-
-        private static CompilationOptions CreateCompilationOptions(TestWorkspace workspace, string language, XElement compilationOptionsElement, ParseOptions parseOptions)
-        {
-            var rootNamespace = new VisualBasicCompilationOptions(OutputKind.ConsoleApplication).RootNamespace;
-            var globalImports = new List<GlobalImport>();
-            var reportDiagnostic = ReportDiagnostic.Default;
-            var cryptoKeyFile = default(string);
-            var strongNameProvider = default(StrongNameProvider);
-            var delaySign = default(bool?);
-            var checkOverflow = false;
-            var allowUnsafe = false;
-            var outputKind = OutputKind.DynamicallyLinkedLibrary;
-            var nullable = NullableContextOptions.Disable;
-
-            if (compilationOptionsElement != null)
-            {
-                globalImports = compilationOptionsElement.Elements(GlobalImportElementName)
-                                                         .Select(x => GlobalImport.Parse(x.Value)).ToList();
-                var rootNamespaceAttribute = compilationOptionsElement.Attribute(RootNamespaceAttributeName);
-                if (rootNamespaceAttribute != null)
-                {
-                    rootNamespace = rootNamespaceAttribute.Value;
-                }
-
-                var outputKindAttribute = compilationOptionsElement.Attribute(OutputKindName);
-                if (outputKindAttribute != null)
-                {
-                    outputKind = (OutputKind)Enum.Parse(typeof(OutputKind), (string)outputKindAttribute.Value);
-                }
-
-                var checkOverflowAttribute = compilationOptionsElement.Attribute(CheckOverflowAttributeName);
-                if (checkOverflowAttribute != null)
-                {
-                    checkOverflow = (bool)checkOverflowAttribute;
-                }
-
-                var allowUnsafeAttribute = compilationOptionsElement.Attribute(AllowUnsafeAttributeName);
-                if (allowUnsafeAttribute != null)
-                {
-                    allowUnsafe = (bool)allowUnsafeAttribute;
-                }
-
-                var reportDiagnosticAttribute = compilationOptionsElement.Attribute(ReportDiagnosticAttributeName);
-                if (reportDiagnosticAttribute != null)
-                {
-                    reportDiagnostic = (ReportDiagnostic)Enum.Parse(typeof(ReportDiagnostic), (string)reportDiagnosticAttribute);
-                }
-
-                var cryptoKeyFileAttribute = compilationOptionsElement.Attribute(CryptoKeyFileAttributeName);
-                if (cryptoKeyFileAttribute != null)
-                {
-                    cryptoKeyFile = (string)cryptoKeyFileAttribute;
-                }
-
-                var strongNameProviderAttribute = compilationOptionsElement.Attribute(StrongNameProviderAttributeName);
-                if (strongNameProviderAttribute != null)
-                {
-                    var type = Type.GetType((string)strongNameProviderAttribute);
-                    // DesktopStrongNameProvider and SigningTestHelpers.VirtualizedStrongNameProvider do
-                    // not have a default constructor but constructors with optional parameters.
-                    // Activator.CreateInstance does not work with this.
-                    if (type == typeof(DesktopStrongNameProvider))
-                    {
-                        strongNameProvider = SigningTestHelpers.DefaultDesktopStrongNameProvider;
-                    }
-                    else
-                    {
-                        strongNameProvider = (StrongNameProvider)Activator.CreateInstance(type);
-                    }
-                }
-
-                var delaySignAttribute = compilationOptionsElement.Attribute(DelaySignAttributeName);
-                if (delaySignAttribute != null)
-                {
-                    delaySign = (bool)delaySignAttribute;
-                }
-
-                var nullableAttribute = compilationOptionsElement.Attribute(NullableAttributeName);
-                if (nullableAttribute != null)
-                {
-                    nullable = (NullableContextOptions)Enum.Parse(typeof(NullableContextOptions), (string)nullableAttribute.Value);
-                }
-
-                var outputTypeAttribute = compilationOptionsElement.Attribute(OutputTypeAttributeName);
-                if (outputTypeAttribute != null
-                    && outputTypeAttribute.Value == "WindowsRuntimeMetadata")
-                {
-                    if (rootNamespaceAttribute == null)
-                    {
-                        rootNamespace = new VisualBasicCompilationOptions(OutputKind.WindowsRuntimeMetadata).RootNamespace;
-                    }
-
-                    // VB needs Compilation.ParseOptions set (we do the same at the VS layer)
-                    return language == LanguageNames.CSharp
-                       ? (CompilationOptions)new CSharpCompilationOptions(OutputKind.WindowsRuntimeMetadata, allowUnsafe: allowUnsafe)
-                       : new VisualBasicCompilationOptions(OutputKind.WindowsRuntimeMetadata).WithGlobalImports(globalImports).WithRootNamespace(rootNamespace)
-                            .WithParseOptions((VisualBasicParseOptions)parseOptions ?? VisualBasicParseOptions.Default);
-                }
-            }
-            else
-            {
-                // Add some common global imports by default for VB
-                globalImports.Add(GlobalImport.Parse("System"));
-                globalImports.Add(GlobalImport.Parse("System.Collections.Generic"));
-                globalImports.Add(GlobalImport.Parse("System.Linq"));
-            }
-
-            // TODO: Allow these to be specified.
-            var languageServices = workspace.Services.GetLanguageServices(language);
-            var metadataService = workspace.Services.GetService<IMetadataService>();
-            var compilationOptions = languageServices.GetService<ICompilationFactoryService>().GetDefaultCompilationOptions();
-            compilationOptions = compilationOptions.WithOutputKind(outputKind)
-                                                   .WithGeneralDiagnosticOption(reportDiagnostic)
-                                                   .WithSourceReferenceResolver(SourceFileResolver.Default)
-                                                   .WithXmlReferenceResolver(XmlFileResolver.Default)
-                                                   .WithMetadataReferenceResolver(new WorkspaceMetadataFileReferenceResolver(metadataService, new RelativePathResolver(ImmutableArray<string>.Empty, null)))
-                                                   .WithAssemblyIdentityComparer(DesktopAssemblyIdentityComparer.Default)
-                                                   .WithCryptoKeyFile(cryptoKeyFile)
-                                                   .WithStrongNameProvider(strongNameProvider)
-                                                   .WithDelaySign(delaySign)
-                                                   .WithOverflowChecks(checkOverflow);
-
-            if (language == LanguageNames.CSharp)
-            {
-                compilationOptions = ((CSharpCompilationOptions)compilationOptions).WithAllowUnsafe(allowUnsafe).WithNullableContextOptions(nullable);
-            }
-
-            if (language == LanguageNames.VisualBasic)
-            {
-                // VB needs Compilation.ParseOptions set (we do the same at the VS layer)
-                compilationOptions = ((VisualBasicCompilationOptions)compilationOptions).WithRootNamespace(rootNamespace)
-                                                                                        .WithGlobalImports(globalImports)
-                                                                                        .WithParseOptions((VisualBasicParseOptions)parseOptions ??
-                                                                                            VisualBasicParseOptions.Default);
-            }
-
-            return compilationOptions;
+            //return language == LanguageNames.CSharp || language == LanguageNames.VisualBasic
+            //    ? CreateCompilationOptions(workspace, language, compilationOptionsElement, parseOptions)
+            //    : null;
+            return null;
         }
 
         private static TestHostDocument CreateDocument(
@@ -895,14 +612,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
 
         private static SyntaxTree CreateSyntaxTree(ParseOptions options, string referencedCode)
         {
-            if (LanguageNames.CSharp == options.Language)
-            {
-                return Microsoft.CodeAnalysis.CSharp.SyntaxFactory.ParseSyntaxTree(referencedCode, options);
-            }
-            else
-            {
-                return Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.ParseSyntaxTree(referencedCode, options);
-            }
+            return Microsoft.CodeAnalysis.CSharp.SyntaxFactory.ParseSyntaxTree(referencedCode, options);
         }
 
         private static IList<MetadataReference> CreateReferenceList(TestWorkspace workspace, XElement element)

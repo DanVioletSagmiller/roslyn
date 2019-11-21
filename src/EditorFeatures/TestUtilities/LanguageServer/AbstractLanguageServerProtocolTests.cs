@@ -28,20 +28,6 @@ namespace Roslyn.Test.Utilities
     [UseExportProvider]
     public abstract class AbstractLanguageServerProtocolTests
     {
-        protected virtual ExportProvider GetExportProvider()
-        {
-            var requestHelperTypes = DesktopTestHelpers.GetAllTypesImplementingGivenInterface(
-                    typeof(IRequestHandler).Assembly, typeof(IRequestHandler));
-            var executeCommandHandlerTypes = DesktopTestHelpers.GetAllTypesImplementingGivenInterface(
-                    typeof(IExecuteWorkspaceCommandHandler).Assembly, typeof(IExecuteWorkspaceCommandHandler));
-            var exportProviderFactory = ExportProviderCache.GetOrCreateExportProviderFactory(
-                TestExportProvider.EntireAssemblyCatalogWithCSharpAndVisualBasic
-                .WithPart(typeof(LanguageServerProtocol))
-                .WithParts(requestHelperTypes)
-                .WithParts(executeCommandHandlerTypes));
-            return exportProviderFactory.CreateExportProvider();
-        }
-
         /// <summary>
         /// Asserts two objects are equivalent by converting to JSON and ignoring whitespace.
         /// </summary>
@@ -171,44 +157,6 @@ namespace Roslyn.Test.Utilities
                 },
                 Title = codeActionTitle
             };
-
-        /// <summary>
-        /// Creates a solution with a document.
-        /// </summary>
-        /// <returns>the solution and the annotated ranges in the document.</returns>
-        protected (Solution solution, Dictionary<string, IList<LSP.Location>> locations) CreateTestSolution(string markup)
-            => CreateTestSolution(new string[] { markup });
-
-        /// <summary>
-        /// Create a solution with multiple documents.
-        /// </summary>
-        /// <returns>
-        /// the solution with the documents plus a list for each document of all annotated ranges in the document.
-        /// </returns>
-        protected (Solution solution, Dictionary<string, IList<LSP.Location>> locations) CreateTestSolution(string[] markups)
-        {
-            using var workspace = TestWorkspace.CreateCSharp(markups, exportProvider: GetExportProvider());
-            var solution = workspace.CurrentSolution;
-            var locations = new Dictionary<string, IList<LSP.Location>>();
-
-            foreach (var document in workspace.Documents)
-            {
-                var text = solution.GetDocument(document.Id).GetTextSynchronously(CancellationToken.None);
-                foreach (var kvp in document.AnnotatedSpans)
-                {
-                    locations.GetOrAdd(kvp.Key, CreateLocation)
-                        .AddRange(kvp.Value.Select(s => ProtocolConversions.TextSpanToLocation(s, text, new Uri(GetDocumentFilePathFromName(document.Name)))));
-                }
-
-                // Pass in the text without markup.
-                workspace.ChangeSolution(ChangeDocumentFilePathToValidURI(workspace.CurrentSolution, document, text));
-            }
-
-            return (workspace.CurrentSolution, locations);
-
-            // local functions
-            static List<LSP.Location> CreateLocation(string s) => new List<LSP.Location>();
-        }
 
         // Private protected because LanguageServerProtocol is internal
         private protected static LanguageServerProtocol GetLanguageServer(Solution solution)

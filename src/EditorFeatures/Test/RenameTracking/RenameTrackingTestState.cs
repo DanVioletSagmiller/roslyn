@@ -13,7 +13,6 @@ using Microsoft.CodeAnalysis.Editor.Implementation.RenameTracking;
 using Microsoft.CodeAnalysis.Editor.Shared.Utilities;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Utilities;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
-using Microsoft.CodeAnalysis.Editor.VisualBasic.RenameTracking;
 using Microsoft.CodeAnalysis.Notification;
 using Microsoft.CodeAnalysis.Shared.TestHooks;
 using Microsoft.CodeAnalysis.Shared.Utilities;
@@ -50,82 +49,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.RenameTracking
 
         private readonly CodeFixProvider _codeFixProvider;
         private readonly RenameTrackingCancellationCommandHandler _commandHandler = new RenameTrackingCancellationCommandHandler();
-
-        public static RenameTrackingTestState Create(
-            string markup,
-            string languageName,
-            bool onBeforeGlobalSymbolRenamedReturnValue = true,
-            bool onAfterGlobalSymbolRenamedReturnValue = true)
-        {
-            var workspace = CreateTestWorkspace(markup, languageName, EditorServicesUtil.ExportProvider);
-            return new RenameTrackingTestState(workspace, languageName, onBeforeGlobalSymbolRenamedReturnValue, onAfterGlobalSymbolRenamedReturnValue);
-        }
-
-        public static RenameTrackingTestState CreateFromWorkspaceXml(
-            string workspaceXml,
-            string languageName,
-            bool onBeforeGlobalSymbolRenamedReturnValue = true,
-            bool onAfterGlobalSymbolRenamedReturnValue = true)
-        {
-            var workspace = TestWorkspace.Create(
-                workspaceXml,
-                exportProvider: EditorServicesUtil.ExportProvider);
-
-            return new RenameTrackingTestState(workspace, languageName, onBeforeGlobalSymbolRenamedReturnValue, onAfterGlobalSymbolRenamedReturnValue);
-        }
-
-        public RenameTrackingTestState(
-            TestWorkspace workspace,
-            string languageName,
-            bool onBeforeGlobalSymbolRenamedReturnValue = true,
-            bool onAfterGlobalSymbolRenamedReturnValue = true)
-        {
-            this.Workspace = workspace;
-
-            _hostDocument = Workspace.Documents.First();
-            _view = _hostDocument.GetTextView();
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, _hostDocument.CursorPosition.Value));
-            _editorOperations = Workspace.GetService<IEditorOperationsFactoryService>().GetEditorOperations(_view);
-            _historyRegistry = Workspace.ExportProvider.GetExport<ITextUndoHistoryRegistry>().Value;
-            _mockRefactorNotifyService = new MockRefactorNotifyService
-            {
-                OnBeforeSymbolRenamedReturnValue = onBeforeGlobalSymbolRenamedReturnValue,
-                OnAfterSymbolRenamedReturnValue = onAfterGlobalSymbolRenamedReturnValue
-            };
-
-            // Mock the action taken by the workspace INotificationService
-            var notificationService = Workspace.Services.GetService<INotificationService>() as INotificationServiceCallback;
-            var callback = new Action<string, string, NotificationSeverity>((message, title, severity) => _notificationMessage = message);
-            notificationService.NotificationCallback = callback;
-
-            var tracker = new RenameTrackingTaggerProvider(
-                Workspace.ExportProvider.GetExportedValue<IThreadingContext>(),
-                _historyRegistry,
-                Workspace.ExportProvider.GetExport<Host.IWaitIndicator>().Value,
-                Workspace.ExportProvider.GetExport<IInlineRenameService>().Value,
-                Workspace.ExportProvider.GetExport<IDiagnosticAnalyzerService>().Value,
-                SpecializedCollections.SingletonEnumerable(_mockRefactorNotifyService),
-                Workspace.ExportProvider.GetExportedValue<IAsynchronousOperationListenerProvider>());
-
-            _tagger = tracker.CreateTagger<RenameTrackingTag>(_hostDocument.GetTextBuffer());
-
-            if (languageName == LanguageNames.CSharp)
-            {
-                _codeFixProvider = new CSharpRenameTrackingCodeFixProvider(
-                    _historyRegistry,
-                    SpecializedCollections.SingletonEnumerable(_mockRefactorNotifyService));
-            }
-            else if (languageName == LanguageNames.VisualBasic)
-            {
-                _codeFixProvider = new VisualBasicRenameTrackingCodeFixProvider(
-                    _historyRegistry,
-                    SpecializedCollections.SingletonEnumerable(_mockRefactorNotifyService));
-            }
-            else
-            {
-                throw new ArgumentException("Invalid language name: " + languageName, nameof(languageName));
-            }
-        }
 
         private static TestWorkspace CreateTestWorkspace(string code, string languageName, ExportProvider exportProvider = null)
         {

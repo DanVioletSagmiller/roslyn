@@ -22,11 +22,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Diagnostics
         protected virtual bool IncludeUnsuppressedDiagnostics => true;
         protected virtual bool IncludeNoLocationDiagnostics => true;
 
-        protected Task TestAsync(string initial, string expected)
-        {
-            return TestAsync(initial, expected, parseOptions: null, index: CodeActionIndex);
-        }
-
         internal abstract Tuple<DiagnosticAnalyzer, IConfigurationFixProvider> CreateDiagnosticProviderAndFixer(Workspace workspace);
 
         protected override ImmutableArray<CodeAction> MassageActions(ImmutableArray<CodeAction> actions)

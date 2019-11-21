@@ -59,10 +59,6 @@
       <Name>Workspaces</Name>
       <Private>False</Private>
     </ProjectReference>
-    <ProjectReference Include="..\..\Setup\Roslyn.VisualStudio.Setup.csproj">
-      <Name>VisualStudioSetup</Name>
-      <Private>False</Private>
-    </ProjectReference>
     <ProjectReference Include="..\IntegrationService\Microsoft.VisualStudio.IntegrationTest.IntegrationService.csproj">
       <Name>IntegrationService</Name>
     </ProjectReference>

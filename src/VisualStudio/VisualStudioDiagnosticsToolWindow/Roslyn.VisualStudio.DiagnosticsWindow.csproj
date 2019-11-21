@@ -27,9 +27,6 @@
     <ProjectReference Include="..\..\Workspaces\Core\Portable\Microsoft.CodeAnalysis.Workspaces.csproj">
       <Private>false</Private>
     </ProjectReference>
-    <ProjectReference Include="..\..\EditorFeatures\Core\Microsoft.CodeAnalysis.EditorFeatures.csproj">
-      <Private>false</Private>
-    </ProjectReference>
     <ProjectReference Include="..\..\Test\Diagnostics\Roslyn.Hosting.Diagnostics.csproj">
       <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup</IncludeOutputGroupsInVSIX>
       <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup</IncludeOutputGroupsInVSIXLocalOnly>

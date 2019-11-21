@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace Microsoft.CodeAnalysis.Scripting
 {
@@ -18,15 +17,6 @@ namespace Microsoft.CodeAnalysis.Scripting
                 new[] { CSharp.SyntaxFactory.ParseSyntaxTree(source) },
                 new[] { TestReferences.NetStandard13.SystemRuntime },
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-        }
-
-        internal static Compilation CreateVisualBasicCompilationWithCorlib(string source, string assemblyName = null)
-        {
-            return VisualBasicCompilation.Create(
-                assemblyName ?? Guid.NewGuid().ToString(),
-                new[] { VisualBasic.SyntaxFactory.ParseSyntaxTree(source) },
-                new[] { TestReferences.NetStandard13.SystemRuntime },
-                new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         }
 
         internal static Compilation CreateCSharpCompilation(string source, IEnumerable<MetadataReference> references, string assemblyName = null, CSharpCompilationOptions options = null)

@@ -2,7 +2,6 @@
 
 using Microsoft.CodeAnalysis.CSharp.DocumentationComments;
 using Microsoft.CodeAnalysis.Test.Utilities;
-using Microsoft.CodeAnalysis.VisualBasic.DocumentationComments;
 using Roslyn.Test.Utilities;
 using Xunit;
 
@@ -11,15 +10,12 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.DocCommentFormatting
     public class DocCommentFormattingTests
     {
         private readonly CSharpDocumentationCommentFormattingService _csharpService = new CSharpDocumentationCommentFormattingService();
-        private readonly VisualBasicDocumentationCommentFormattingService _vbService = new VisualBasicDocumentationCommentFormattingService();
-
+        
         private void TestFormat(string xmlFragment, string expectedCSharp, string expectedVB)
         {
             var csharpFormattedText = _csharpService.Format(xmlFragment);
-            var vbFormattedText = _vbService.Format(xmlFragment);
 
             Assert.Equal(expectedCSharp, csharpFormattedText);
-            Assert.Equal(expectedVB, vbFormattedText);
         }
 
         private void TestFormat(string xmlFragment, string expected)

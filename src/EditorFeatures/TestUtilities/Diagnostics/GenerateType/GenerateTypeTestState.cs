@@ -20,22 +20,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Diagnostics.GenerateType
         public Project TriggeredProject { get; }
         public string TypeName { get; }
 
-        public static GenerateTypeTestState Create(
-            string initial,
-            string projectToBeModified,
-            string typeName,
-            string existingFileName,
-            string languageName)
-        {
-            var workspace = TestWorkspace.IsWorkspaceElement(initial)
-                ? TestWorkspace.Create(initial)
-                : languageName == LanguageNames.CSharp
-                  ? TestWorkspace.CreateCSharp(initial)
-                  : TestWorkspace.CreateVisualBasic(initial);
-
-            return new GenerateTypeTestState(projectToBeModified, typeName, existingFileName, workspace);
-        }
-
         private GenerateTypeTestState(string projectToBeModified, string typeName, string existingFileName, TestWorkspace testWorkspace)
         {
             Workspace = testWorkspace;

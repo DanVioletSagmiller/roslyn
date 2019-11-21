@@ -12,8 +12,6 @@ using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
 using Microsoft.CodeAnalysis.Notification;
 using Microsoft.CodeAnalysis.Shared.Extensions;
 using Microsoft.CodeAnalysis.Test.Utilities;
-using Microsoft.CodeAnalysis.VisualBasic;
-using Microsoft.CodeAnalysis.VisualBasic.ChangeSignature;
 using Microsoft.VisualStudio.Composition;
 using Roslyn.Test.Utilities;
 using Roslyn.Utilities;
@@ -28,22 +26,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.ChangeSignature
         public AbstractChangeSignatureService ChangeSignatureService { get; }
         public string ErrorMessage { get; private set; }
         public NotificationSeverity ErrorSeverity { get; private set; }
-
-        public static ChangeSignatureTestState Create(string markup, string languageName, ParseOptions parseOptions = null)
-        {
-            var exportProvider = s_exportProviderFactory.CreateExportProvider();
-            var workspace = languageName == LanguageNames.CSharp
-                  ? TestWorkspace.CreateCSharp(markup, exportProvider: exportProvider, parseOptions: (CSharpParseOptions)parseOptions)
-                  : TestWorkspace.CreateVisualBasic(markup, exportProvider: exportProvider, parseOptions: parseOptions, compilationOptions: new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
-            return new ChangeSignatureTestState(workspace);
-        }
-
-        public static ChangeSignatureTestState Create(XElement workspaceXml)
-        {
-            var workspace = TestWorkspace.Create(workspaceXml);
-            return new ChangeSignatureTestState(workspace);
-        }
 
         public ChangeSignatureTestState(TestWorkspace workspace)
         {
@@ -94,8 +76,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.ChangeSignature
             ExportProviderCache.GetOrCreateExportProviderFactory(
                 TestExportProvider.MinimumCatalogWithCSharpAndVisualBasic
                     .WithPart(typeof(TestChangeSignatureOptionsService))
-                    .WithPart(typeof(CSharpChangeSignatureService))
-                    .WithPart(typeof(VisualBasicChangeSignatureService)));
+                    .WithPart(typeof(CSharpChangeSignatureService)));
 
         public void Dispose()
         {

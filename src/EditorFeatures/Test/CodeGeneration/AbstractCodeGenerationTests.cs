@@ -8,7 +8,6 @@ using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.Test.Utilities;
 using Microsoft.CodeAnalysis.Text;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.VisualStudio.Composition;
 using Microsoft.VisualStudio.LanguageServices;
 using Roslyn.Test.Utilities;
@@ -66,11 +65,10 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
 
         internal void Test(
             Func<SyntaxGenerator, SyntaxNode> nodeCreator,
-            string cs, string csSimple,
-            string vb, string vbSimple)
+            string cs, string csSimple)
         {
-            Assert.True(cs != null || csSimple != null || vb != null || vbSimple != null,
-                $"At least one of {nameof(cs)}, {nameof(csSimple)}, {nameof(vb)}, {nameof(vbSimple)} must be provided");
+            Assert.True(cs != null || csSimple != null,
+                $"At least one of {nameof(cs)}, {nameof(csSimple)} must be provided");
 
             var hostServices = VisualStudioMefHostServices.Create(TestExportProvider.ExportProviderWithCSharpAndVisualBasic);
             var workspace = new AdhocWorkspace(hostServices);
@@ -93,27 +91,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     var expression = simplifiedRootNode.DescendantNodes().OfType<EqualsValueClauseSyntax>().First().Value;
 
                     TokenUtilities.AssertTokensEqual(csSimple, expression.NormalizeWhitespace().ToFullString(), LanguageNames.CSharp);
-                }
-            }
-
-            if (vb != null || vbSimple != null)
-            {
-                var codeDefFactory = workspace.Services.GetLanguageServices(LanguageNames.VisualBasic).GetService<SyntaxGenerator>();
-
-                var node = nodeCreator(codeDefFactory);
-                node = node.NormalizeWhitespace();
-
-                if (vb != null)
-                {
-                    TokenUtilities.AssertTokensEqual(vb, node.ToFullString(), LanguageNames.VisualBasic);
-                }
-
-                if (vbSimple != null)
-                {
-                    var simplifiedRootNode = Simplify(workspace, WrapExpressionInBoilerplate(node, codeDefFactory), LanguageNames.VisualBasic);
-                    var expression = simplifiedRootNode.DescendantNodes().OfType<EqualsValueSyntax>().First().Value;
-
-                    TokenUtilities.AssertTokensEqual(vbSimple, expression.NormalizeWhitespace().ToFullString(), LanguageNames.VisualBasic);
                 }
             }
         }

@@ -9,7 +9,6 @@ using Roslyn.Test.Utilities;
 using Roslyn.Utilities;
 using Xunit;
 using CS = Microsoft.CodeAnalysis.CSharp;
-using VB = Microsoft.CodeAnalysis.VisualBasic;
 
 namespace Microsoft.CodeAnalysis.Editor.UnitTests.MetadataAsSource
 {
@@ -748,20 +747,6 @@ End Class");
             var a = await context.GenerateSourceAsync(project: context.DefaultProject);
             var b = await context.GenerateSourceAsync(project: project);
             context.VerifyDocumentReused(a, b);
-        }
-
-        [Fact, Trait(Traits.Feature, Traits.Features.MetadataAsSource)]
-        public async Task TestNotReusedGeneratingForDifferentLanguage()
-        {
-            using var context = TestContext.Create(LanguageNames.CSharp);
-            var projectId = ProjectId.CreateNewId();
-            var project = context.CurrentSolution.AddProject(projectId, "ProjectB", "ProjectB", LanguageNames.VisualBasic).GetProject(projectId)
-                .WithMetadataReferences(context.DefaultProject.MetadataReferences)
-                .WithCompilationOptions(new VB.VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
-            var a = await context.GenerateSourceAsync(project: context.DefaultProject);
-            var b = await context.GenerateSourceAsync(project: project);
-            context.VerifyDocumentNotReused(a, b);
         }
 
         [WorkItem(546311, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/546311")]

@@ -9,7 +9,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.PooledObjects;
-using Microsoft.CodeAnalysis.VisualBasic;
 using Roslyn.Test.Utilities;
 using Roslyn.Utilities;
 using Xunit;
@@ -673,11 +672,6 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
             {
                 case LanguageNames.CSharp:
                     CSharp.Conversion csharpConversion = CSharp.CSharpExtensions.GetConversion(operation);
-                    Assert.Throws<ArgumentException>(() => VisualBasic.VisualBasicExtensions.GetConversion(operation));
-                    break;
-                case LanguageNames.VisualBasic:
-                    VisualBasic.Conversion visualBasicConversion = VisualBasic.VisualBasicExtensions.GetConversion(operation);
-                    Assert.Throws<ArgumentException>(() => CSharp.CSharpExtensions.GetConversion(operation));
                     break;
                 default:
                     Debug.Fail($"Language {operation.Language} is unknown!");
@@ -970,20 +964,8 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
             var inConversion = operation.InConversion;
             var outConversion = operation.OutConversion;
 
-            if (operation.Syntax.Language == LanguageNames.CSharp)
-            {
-                Assert.Throws<ArgumentException>("compoundAssignment", () => VisualBasic.VisualBasicExtensions.GetInConversion(operation));
-                Assert.Throws<ArgumentException>("compoundAssignment", () => VisualBasic.VisualBasicExtensions.GetOutConversion(operation));
-                var inConversionInteranl = CSharp.CSharpExtensions.GetInConversion(operation);
-                var outConversionInteranl = CSharp.CSharpExtensions.GetOutConversion(operation);
-            }
-            else
-            {
-                Assert.Throws<ArgumentException>("compoundAssignment", () => CSharp.CSharpExtensions.GetInConversion(operation));
-                Assert.Throws<ArgumentException>("compoundAssignment", () => CSharp.CSharpExtensions.GetOutConversion(operation));
-                var inConversionInternal = VisualBasic.VisualBasicExtensions.GetInConversion(operation);
-                var outConversionInternal = VisualBasic.VisualBasicExtensions.GetOutConversion(operation);
-            }
+            var inConversionInteranl = CSharp.CSharpExtensions.GetInConversion(operation);
+            var outConversionInteranl = CSharp.CSharpExtensions.GetOutConversion(operation);
 
             var isLifted = operation.IsLifted;
             var isChecked = operation.IsChecked;

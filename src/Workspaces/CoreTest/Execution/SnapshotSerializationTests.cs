@@ -506,18 +506,6 @@ MefHostServices.DefaultAssemblies.Add(typeof(Host.TemporaryStorageServiceFactory
         }
 
         [Fact]
-        public async Task VBParseOptionsInCompilationOptions()
-        {
-            var project = new AdhocWorkspace().CurrentSolution.AddProject("empty", "empty", LanguageNames.VisualBasic);
-            project = project.WithCompilationOptions(
-                ((VisualBasic.VisualBasicCompilationOptions)project.CompilationOptions).WithParseOptions((VisualBasic.VisualBasicParseOptions)project.ParseOptions));
-
-            var checksum = await project.State.GetChecksumAsync(CancellationToken.None).ConfigureAwait(false);
-
-            Assert.NotNull(checksum);
-        }
-
-        [Fact]
         public async Task TestMetadataXmlDocComment()
         {
             // portable layer doesn't support xml doc comments
@@ -567,39 +555,6 @@ MefHostServices.DefaultAssemblies.Add(typeof(Host.TemporaryStorageServiceFactory
 
                 var newText = serializer.Deserialize<SourceText>(sourceText.GetWellKnownSynchronizationKind(), objectReader, CancellationToken.None);
                 Assert.Equal(sourceText.ToString(), newText.ToString());
-            }
-        }
-
-        [Fact]
-        public void TestCompilationOptions_NullableAndImport()
-        {
-            var csharpOptions = CSharp.CSharpCompilation.Create("dummy").Options.WithNullableContextOptions(NullableContextOptions.Warnings).WithMetadataImportOptions(MetadataImportOptions.All);
-            var vbOptions = VisualBasic.VisualBasicCompilation.Create("dummy").Options.WithMetadataImportOptions(MetadataImportOptions.Internal);
-
-            var hostServices = MefHostServices.Create(MefHostServices.DefaultAssemblies);
-
-            var workspace = new AdhocWorkspace(hostServices);
-            var serializer = workspace.Services.GetService<ISerializerService>();
-
-            VerifyOptions(csharpOptions);
-            VerifyOptions(vbOptions);
-
-            void VerifyOptions(CompilationOptions originalOptions)
-            {
-                using var stream = SerializableBytes.CreateWritableStream();
-                using (var objectWriter = new ObjectWriter(stream))
-                {
-                    serializer.Serialize(originalOptions, objectWriter, CancellationToken.None);
-                }
-
-                stream.Position = 0;
-                using var objectReader = ObjectReader.TryGetReader(stream);
-                var recoveredOptions = serializer.Deserialize<CompilationOptions>(originalOptions.GetWellKnownSynchronizationKind(), objectReader, CancellationToken.None);
-
-                var original = serializer.CreateChecksum(originalOptions, CancellationToken.None);
-                var recovered = serializer.CreateChecksum(recoveredOptions, CancellationToken.None);
-
-                Assert.Equal(original, recovered);
             }
         }
 

@@ -32,12 +32,6 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <IncludeOutputGroupsInVSIX>VSIXContainerProjectOutputGroup%3b</IncludeOutputGroupsInVSIX>
     </ProjectReference>
-    <ProjectReference Include="..\VisualStudio\Setup\Roslyn.VisualStudio.Setup.csproj">
-      <Name>VisualStudioSetup</Name>
-      <VSIXSubPath>Vsixes</VSIXSubPath>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <IncludeOutputGroupsInVSIX>VSIXContainerProjectOutputGroup%3b</IncludeOutputGroupsInVSIX>
-    </ProjectReference>
     <ProjectReference Include="..\VisualStudio\VisualStudioInteractiveComponents\Roslyn.VisualStudio.InteractiveComponents.csproj">
       <Name>VisualStudioInteractiveComponents</Name>
       <VSIXSubPath>Vsixes</VSIXSubPath>

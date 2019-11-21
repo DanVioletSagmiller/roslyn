@@ -367,12 +367,6 @@ namespace Microsoft.CodeAnalysis
             protected override SyntaxKind ObjectCreationExpressionKind => SyntaxKind.ObjectCreationExpression;
         }
 
-        [DiagnosticAnalyzer(LanguageNames.VisualBasic)]
-        public class VisualBasicCodeBlockObjectCreationAnalyzer : CodeBlockObjectCreationAnalyzer<VisualBasic.SyntaxKind>
-        {
-            protected override VisualBasic.SyntaxKind ObjectCreationExpressionKind => VisualBasic.SyntaxKind.ObjectCreationExpression;
-        }
-
         public abstract class CodeBlockObjectCreationAnalyzer<TLanguageKindEnum> : DiagnosticAnalyzer
             where TLanguageKindEnum : struct
         {
@@ -431,12 +425,6 @@ namespace Microsoft.CodeAnalysis
         public class CSharpNamespaceDeclarationAnalyzer : AbstractNamespaceDeclarationAnalyzer<SyntaxKind>
         {
             protected override SyntaxKind NamespaceDeclarationSyntaxKind => SyntaxKind.NamespaceDeclaration;
-        }
-
-        [DiagnosticAnalyzer(LanguageNames.VisualBasic)]
-        public class VisualBasicNamespaceDeclarationAnalyzer : AbstractNamespaceDeclarationAnalyzer<VisualBasic.SyntaxKind>
-        {
-            protected override VisualBasic.SyntaxKind NamespaceDeclarationSyntaxKind => VisualBasic.SyntaxKind.NamespaceStatement;
         }
 
         public abstract class AbstractNamespaceDeclarationAnalyzer<TLanguageKindEnum> : DiagnosticAnalyzer

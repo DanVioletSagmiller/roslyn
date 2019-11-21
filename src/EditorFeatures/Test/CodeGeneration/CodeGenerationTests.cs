@@ -17,7 +17,6 @@ using Microsoft.CodeAnalysis.Text;
 using Roslyn.Test.Utilities;
 using Xunit;
 using CS = Microsoft.CodeAnalysis.CSharp;
-using VB = Microsoft.CodeAnalysis.VisualBasic;
 
 namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
 {
@@ -632,119 +631,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             return s => s?.Compilation.GetTypeByMetadataName(typeMetadataName);
         }
 
-        internal static IEnumerable<SyntaxToken> CreateModifierTokens(Editing.DeclarationModifiers modifiers, string language)
-        {
-            if (language == LanguageNames.CSharp)
-            {
-                if (modifiers.IsAbstract)
-                {
-                    yield return CS.SyntaxFactory.Token(CS.SyntaxKind.AbstractKeyword);
-                }
-
-                if (modifiers.IsAsync)
-                {
-                    yield return CS.SyntaxFactory.Token(CS.SyntaxKind.AsyncKeyword);
-                }
-
-                if (modifiers.IsConst)
-                {
-                    yield return CS.SyntaxFactory.Token(CS.SyntaxKind.ConstKeyword);
-                }
-
-                if (modifiers.IsNew)
-                {
-                    yield return CS.SyntaxFactory.Token(CS.SyntaxKind.NewKeyword);
-                }
-
-                if (modifiers.IsOverride)
-                {
-                    yield return CS.SyntaxFactory.Token(CS.SyntaxKind.OverrideKeyword);
-                }
-
-                if (modifiers.IsPartial)
-                {
-                    yield return CS.SyntaxFactory.Token(CS.SyntaxKind.PartialKeyword);
-                }
-
-                if (modifiers.IsReadOnly)
-                {
-                    yield return CS.SyntaxFactory.Token(CS.SyntaxKind.ReadOnlyKeyword);
-                }
-
-                if (modifiers.IsSealed)
-                {
-                    yield return CS.SyntaxFactory.Token(CS.SyntaxKind.SealedKeyword);
-                }
-
-                if (modifiers.IsStatic)
-                {
-                    yield return CS.SyntaxFactory.Token(CS.SyntaxKind.StaticKeyword);
-                }
-
-                if (modifiers.IsUnsafe)
-                {
-                    yield return CS.SyntaxFactory.Token(CS.SyntaxKind.UnsafeKeyword);
-                }
-
-                if (modifiers.IsVirtual)
-                {
-                    yield return CS.SyntaxFactory.Token(CS.SyntaxKind.VirtualKeyword);
-                }
-            }
-            else
-            {
-                if (modifiers.IsAbstract)
-                {
-                    yield return VB.SyntaxFactory.Token(VB.SyntaxKind.MustOverrideKeyword);
-                }
-
-                if (modifiers.IsAsync)
-                {
-                    yield return VB.SyntaxFactory.Token(VB.SyntaxKind.AsyncKeyword);
-                }
-
-                if (modifiers.IsConst)
-                {
-                    yield return VB.SyntaxFactory.Token(VB.SyntaxKind.ConstKeyword);
-                }
-
-                if (modifiers.IsNew)
-                {
-                    yield return VB.SyntaxFactory.Token(VB.SyntaxKind.NewKeyword);
-                }
-
-                if (modifiers.IsOverride)
-                {
-                    yield return VB.SyntaxFactory.Token(VB.SyntaxKind.OverridesKeyword);
-                }
-
-                if (modifiers.IsPartial)
-                {
-                    yield return VB.SyntaxFactory.Token(VB.SyntaxKind.PartialKeyword);
-                }
-
-                if (modifiers.IsReadOnly)
-                {
-                    yield return VB.SyntaxFactory.Token(VB.SyntaxKind.ReadOnlyKeyword);
-                }
-
-                if (modifiers.IsSealed)
-                {
-                    yield return VB.SyntaxFactory.Token(VB.SyntaxKind.NotInheritableKeyword);
-                }
-
-                if (modifiers.IsStatic)
-                {
-                    yield return VB.SyntaxFactory.Token(VB.SyntaxKind.StaticKeyword);
-                }
-
-                if (modifiers.IsVirtual)
-                {
-                    yield return VB.SyntaxFactory.Token(VB.SyntaxKind.OverridableKeyword);
-                }
-            }
-        }
-
         internal class TestContext : IDisposable
         {
             private readonly string _expected;
@@ -843,14 +729,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                 var parts = statements.Split(new[] { delimiter }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (var p in parts)
                 {
-                    if (IsVisualBasic)
-                    {
-                        list.Add(VB.SyntaxFactory.ParseExecutableStatement(p));
-                    }
-                    else
-                    {
-                        list.Add(CS.SyntaxFactory.ParseStatement(p + delimiter));
-                    }
+                    list.Add(CS.SyntaxFactory.ParseStatement(p + delimiter));
                 }
 
                 return list.ToImmutable();
@@ -897,9 +776,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
 
             private static TestWorkspace CreateWorkspaceFromFile(string file, bool isVisualBasic, ParseOptions parseOptions, CompilationOptions compilationOptions)
             {
-                return isVisualBasic ?
-                    TestWorkspace.CreateVisualBasic(file, (VB.VisualBasicParseOptions)parseOptions, (VB.VisualBasicCompilationOptions)compilationOptions) :
-                    TestWorkspace.CreateCSharp(file, (CS.CSharpParseOptions)parseOptions, (CS.CSharpCompilationOptions)compilationOptions);
+                return TestWorkspace.CreateCSharp(file, (CS.CSharpParseOptions)parseOptions, (CS.CSharpCompilationOptions)compilationOptions);
             }
         }
     }

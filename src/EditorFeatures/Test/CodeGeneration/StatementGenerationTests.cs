@@ -12,9 +12,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
         {
             Test(f => f.ThrowStatement(),
                 cs: "throw;",
-                csSimple: null,
-                vb: "Throw",
-                vbSimple: null);
+                csSimple: null);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.CodeGeneration)]
@@ -23,9 +21,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(f => f.ThrowStatement(
                 f.IdentifierName("e")),
                 cs: "throw e;",
-                csSimple: null,
-                vb: "Throw e",
-                vbSimple: null);
+                csSimple: null);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.CodeGeneration)]
@@ -35,9 +31,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                 f.ObjectCreationExpression(
                     CreateClass("NotImplementedException"))),
                 cs: "throw new NotImplementedException();",
-                csSimple: null,
-                vb: "Throw New NotImplementedException()",
-                vbSimple: null);
+                csSimple: null);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.CodeGeneration)]
@@ -45,9 +39,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
         {
             Test(f => f.ReturnStatement(),
                 cs: "return;",
-                csSimple: null,
-                vb: "Return",
-                vbSimple: null);
+                csSimple: null);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.CodeGeneration)]
@@ -56,9 +48,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(f => f.ReturnStatement(
                 f.IdentifierName("e")),
                 cs: "return e;",
-                csSimple: null,
-                vb: "Return e",
-                vbSimple: null);
+                csSimple: null);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.CodeGeneration)]
@@ -68,9 +58,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                 f.ObjectCreationExpression(
                     CreateClass("NotImplementedException"))),
                 cs: "return new NotImplementedException();",
-                csSimple: null,
-                vb: "Return New NotImplementedException()",
-                vbSimple: null);
+                csSimple: null);
         }
     }
 }

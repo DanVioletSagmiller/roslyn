@@ -37,18 +37,6 @@ namespace Microsoft.CodeAnalysis.MSBuild.UnitTests
             Assert.Equal(expected, actual(options));
         }
 
-        protected async Task AssertVBCompilationOptionsAsync<T>(T expected, Func<VB.VisualBasicCompilationOptions, T> actual)
-        {
-            var options = await LoadVisualBasicCompilationOptionsAsync();
-            Assert.Equal(expected, actual(options));
-        }
-
-        protected async Task AssertVBParseOptionsAsync<T>(T expected, Func<VB.VisualBasicParseOptions, T> actual)
-        {
-            var options = await LoadVisualBasicParseOptionsAsync();
-            Assert.Equal(expected, actual(options));
-        }
-
         protected async Task<CS.CSharpCompilationOptions> LoadCSharpCompilationOptionsAsync()
         {
             var solutionFilePath = GetSolutionFileName("TestSolution.sln");
@@ -68,44 +56,6 @@ namespace Microsoft.CodeAnalysis.MSBuild.UnitTests
                 var sol = await workspace.OpenSolutionAsync(solutionFilePath);
                 var project = sol.Projects.First();
                 return (CS.CSharpParseOptions)project.ParseOptions;
-            }
-        }
-
-        protected async Task<VB.VisualBasicCompilationOptions> LoadVisualBasicCompilationOptionsAsync()
-        {
-            var solutionFilePath = GetSolutionFileName("TestSolution.sln");
-            using (var workspace = CreateMSBuildWorkspace())
-            {
-                var sol = await workspace.OpenSolutionAsync(solutionFilePath);
-                var project = sol.GetProjectsByName("VisualBasicProject").FirstOrDefault();
-                return (VB.VisualBasicCompilationOptions)project.CompilationOptions;
-            }
-        }
-
-        protected async Task<VB.VisualBasicParseOptions> LoadVisualBasicParseOptionsAsync()
-        {
-            var solutionFilePath = GetSolutionFileName("TestSolution.sln");
-            using (var workspace = CreateMSBuildWorkspace())
-            {
-                var sol = await workspace.OpenSolutionAsync(solutionFilePath);
-                var project = sol.GetProjectsByName("VisualBasicProject").FirstOrDefault();
-                return (VB.VisualBasicParseOptions)project.ParseOptions;
-            }
-        }
-
-        protected static int GetMethodInsertionPoint(VB.Syntax.ClassBlockSyntax classBlock)
-        {
-            if (classBlock.Implements.Count > 0)
-            {
-                return classBlock.Implements[classBlock.Implements.Count - 1].FullSpan.End;
-            }
-            else if (classBlock.Inherits.Count > 0)
-            {
-                return classBlock.Inherits[classBlock.Inherits.Count - 1].FullSpan.End;
-            }
-            else
-            {
-                return classBlock.BlockStatement.FullSpan.End;
             }
         }
 

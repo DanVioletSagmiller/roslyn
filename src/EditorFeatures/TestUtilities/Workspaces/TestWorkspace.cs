@@ -47,11 +47,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
 
         private readonly Dictionary<string, ITextBuffer> _createdTextBuffers = new Dictionary<string, ITextBuffer>();
 
-        public TestWorkspace()
-            : this(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, WorkspaceKind.Test)
-        {
-        }
-
         public TestWorkspace(ExportProvider exportProvider, string? workspaceKind = null, bool disablePartialSolutions = true)
             : base(VisualStudioMefHostServices.Create(exportProvider), workspaceKind ?? WorkspaceKind.Test)
         {
@@ -287,16 +282,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
             testDocument.Update(newText);
         }
 
-        protected override void ApplyDocumentAdded(DocumentInfo info, SourceText text)
-        {
-            var hostProject = this.GetTestProject(info.Id.ProjectId);
-            var hostDocument = new TestHostDocument(
-                text.ToString(), info.Name, info.SourceCodeKind,
-                info.Id, folders: info.Folders);
-            hostProject.AddDocument(hostDocument);
-            this.OnDocumentAdded(hostDocument.ToDocumentInfo());
-        }
-
         protected override void ApplyDocumentRemoved(DocumentId documentId)
         {
             var hostProject = this.GetTestProject(documentId.ProjectId);
@@ -311,14 +296,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
             testDocument.Update(newText);
         }
 
-        protected override void ApplyAdditionalDocumentAdded(DocumentInfo info, SourceText text)
-        {
-            var hostProject = this.GetTestProject(info.Id.ProjectId);
-            var hostDocument = new TestHostDocument(text.ToString(), info.Name, id: info.Id);
-            hostProject.AddAdditionalDocument(hostDocument);
-            this.OnAdditionalDocumentAdded(hostDocument.ToDocumentInfo());
-        }
-
         protected override void ApplyAdditionalDocumentRemoved(DocumentId documentId)
         {
             var hostProject = this.GetTestProject(documentId.ProjectId);
@@ -331,14 +308,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
         {
             var testDocument = this.GetTestAnalyzerConfigDocument(document);
             testDocument.Update(newText);
-        }
-
-        protected override void ApplyAnalyzerConfigDocumentAdded(DocumentInfo info, SourceText text)
-        {
-            var hostProject = this.GetTestProject(info.Id.ProjectId);
-            var hostDocument = new TestHostDocument(text.ToString(), info.Name, id: info.Id);
-            hostProject.AddAnalyzerConfigDocument(hostDocument);
-            this.OnAnalyzerConfigDocumentAdded(hostDocument.ToDocumentInfo());
         }
 
         protected override void ApplyAnalyzerConfigDocumentRemoved(DocumentId documentId)

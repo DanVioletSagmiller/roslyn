@@ -33,12 +33,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.NavigateTo
     [UseExportProvider]
     public abstract class AbstractNavigateToTests
     {
-        private static readonly Lazy<IExportProviderFactory> s_exportProviderFactory =
-            new Lazy<IExportProviderFactory>(() =>
-            {
-                var catalog = TestExportProvider.EntireAssemblyCatalogWithCSharpAndVisualBasic.WithPart(typeof(DocumentTrackingServiceFactory));
-                return ExportProviderCache.GetOrCreateExportProviderFactory(catalog);
-            });
+
 
         protected INavigateToItemProvider _provider;
         protected NavigateToTestAggregator _aggregator;
@@ -65,81 +60,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.NavigateTo
 
         protected abstract TestWorkspace CreateWorkspace(string content, ExportProvider exportProvider);
         protected abstract string Language { get; }
-
-        protected async Task TestAsync(string content, Func<TestWorkspace, Task> body)
-        {
-            // Keep track of tested combinations to ensure all expected tests run
-            var testedCombinations = new HashSet<(bool outOfProcess, Type documentTrackingServiceType)>();
-
-            await TestAsync(content, BodyWrapper, outOfProcess: true);
-            await TestAsync(content, BodyWrapper, outOfProcess: false);
-
-            Assert.Contains((true, null), testedCombinations);
-            Assert.Contains((true, typeof(FirstDocIsVisibleDocumentTrackingService)), testedCombinations);
-            Assert.Contains((true, typeof(FirstDocIsActiveAndVisibleDocumentTrackingService)), testedCombinations);
-
-            Assert.Contains((false, null), testedCombinations);
-            Assert.Contains((false, typeof(FirstDocIsVisibleDocumentTrackingService)), testedCombinations);
-            Assert.Contains((false, typeof(FirstDocIsActiveAndVisibleDocumentTrackingService)), testedCombinations);
-
-            return;
-
-            // Local function
-            Task BodyWrapper(TestWorkspace workspace)
-            {
-                // Track the current test setup
-                var outOfProcess = workspace.Options.GetOption(RemoteHostOptions.RemoteHostTest);
-                var documentTrackingServiceType = workspace.Services.GetService<IDocumentTrackingService>()?.GetType();
-                testedCombinations.Add((outOfProcess, documentTrackingServiceType));
-
-                // Run the test itself
-                return body(workspace);
-            }
-        }
-
-        private async Task TestAsync(string content, Func<TestWorkspace, Task> body, bool outOfProcess)
-        {
-            await TestAsync(content, body, outOfProcess, null);
-            await TestAsync(content, body, outOfProcess, w => new FirstDocIsVisibleDocumentTrackingService(w.Workspace));
-            await TestAsync(content, body, outOfProcess, w => new FirstDocIsActiveAndVisibleDocumentTrackingService(w.Workspace));
-        }
-
-        private async Task TestAsync(
-            string content, Func<TestWorkspace, Task> body, bool outOfProcess,
-            Func<HostWorkspaceServices, IDocumentTrackingService> createTrackingService)
-        {
-            using (var workspace = SetupWorkspace(content, createTrackingService))
-            {
-                workspace.Options = workspace.Options.WithChangedOption(RemoteHostOptions.RemoteHostTest, outOfProcess);
-                await body(workspace);
-            }
-        }
-
-        private protected TestWorkspace SetupWorkspace(
-            XElement workspaceElement,
-            Func<HostWorkspaceServices, IDocumentTrackingService> createTrackingService)
-        {
-            var exportProvider = s_exportProviderFactory.Value.CreateExportProvider();
-            var documentTrackingServiceFactory = exportProvider.GetExportedValue<DocumentTrackingServiceFactory>();
-            documentTrackingServiceFactory.FactoryMethod = createTrackingService;
-
-            var workspace = TestWorkspace.Create(workspaceElement, exportProvider: exportProvider);
-            InitializeWorkspace(workspace);
-            return workspace;
-        }
-
-        private protected TestWorkspace SetupWorkspace(
-            string content,
-            Func<HostWorkspaceServices, IDocumentTrackingService> createTrackingService)
-        {
-            var exportProvider = s_exportProviderFactory.Value.CreateExportProvider();
-            var documentTrackingServiceFactory = exportProvider.GetExportedValue<DocumentTrackingServiceFactory>();
-            documentTrackingServiceFactory.FactoryMethod = createTrackingService;
-
-            var workspace = CreateWorkspace(content, exportProvider);
-            InitializeWorkspace(workspace);
-            return workspace;
-        }
 
         internal void InitializeWorkspace(TestWorkspace workspace)
         {

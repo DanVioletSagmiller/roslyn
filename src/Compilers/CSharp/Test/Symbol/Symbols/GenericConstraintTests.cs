@@ -5658,24 +5658,6 @@ public class Base2 : Base1<Object>
                 compilationOptions: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
             var csVerifier = CompileAndVerify(csCompilation);
             csVerifier.VerifyDiagnostics();
-
-            var vbCompilation = CreateVisualBasicCompilation("InheritedObjectConstraint2VB",
-@"Imports System
-Class Derived : Inherits Base2
-    Public Overrides Sub Goo(Of G As Structure)(ByVal d As G)
-        Console.WriteLine(""Derived"")
-    End Sub
-End Class
-
-Module Program
-    Sub Main
-        Dim x As Base1(Of Object) = New Derived
-        x.Goo(1)
-    End Sub
-End Module",
-                compilationOptions: new Microsoft.CodeAnalysis.VisualBasic.VisualBasicCompilationOptions(OutputKind.ConsoleApplication),
-                referencedCompilations: new[] { csCompilation });
-            vbCompilation.VerifyDiagnostics();
         }
 
         private static void CheckConstraints(

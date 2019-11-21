@@ -10,11 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Compilers\CSharp\csc\csc.csproj" PrivateAssets="All"/>
-    <ProjectReference Include="..\..\..\Compilers\VisualBasic\vbc\vbc.csproj" PrivateAssets="All"/>
-    <ProjectReference Include="..\..\..\Interactive\csi\csi.csproj" PrivateAssets="All"/>
-    <ProjectReference Include="..\..\..\Compilers\Core\MSBuildTask\Microsoft.Build.Tasks.CodeAnalysis.csproj" PrivateAssets="All"/>
-    <ProjectReference Include="..\..\..\Compilers\Server\VBCSCompiler\VBCSCompiler.csproj" PrivateAssets="All"/>
+    <ProjectReference Include="..\..\..\Compilers\CSharp\csc\csc.csproj" PrivateAssets="All" />
+    <ProjectReference Include="..\..\..\Compilers\Core\MSBuildTask\Microsoft.Build.Tasks.CodeAnalysis.csproj" PrivateAssets="All" />
   </ItemGroup>
 
   <Target Name="_SetSwrFilePath">
@@ -26,8 +23,7 @@
   <!-- 
     Calculates which external dependencies included in the target VSIX need to be updated with optimization data.
   -->
-  <Target Name="_CalculateDesktopCompilerArtifactsToOptimize"
-          DependsOnTargets="InitializeDesktopCompilerArtifacts">
+  <Target Name="_CalculateDesktopCompilerArtifactsToOptimize" DependsOnTargets="InitializeDesktopCompilerArtifacts">
 
     <ItemGroup>
       <DesktopCompilerArtifact Condition="'%(DesktopCompilerArtifact.OverwriteNgenOptimizationData)' == 'true' and '$(EnableNgenOptimization)' == 'true' and '$(ApplyNgenOptimization)' != ''">
@@ -41,23 +37,14 @@
   <!-- 
     Copies the artifacts that need optimization data to an intermediate output dir.
   -->
-  <Target Name="_PrepareDesktopCompilerArtifactsForOptimization"
-          DependsOnTargets="_CalculateDesktopCompilerArtifactsToOptimize"
-          Inputs="@(DesktopCompilerArtifact)"
-          Outputs="@(DesktopCompilerArtifact->'%(_OptimizeAssembly)')"
-          Condition="'$(EnableNgenOptimization)' == 'true' and '$(ApplyNgenOptimization)' != ''">
+  <Target Name="_PrepareDesktopCompilerArtifactsForOptimization" DependsOnTargets="_CalculateDesktopCompilerArtifactsToOptimize" Inputs="@(DesktopCompilerArtifact)" Outputs="@(DesktopCompilerArtifact->'%(_OptimizeAssembly)')" Condition="'$(EnableNgenOptimization)' == 'true' and '$(ApplyNgenOptimization)' != ''">
 
     <Copy SourceFiles="%(DesktopCompilerArtifact.Identity)" DestinationFiles="%(DesktopCompilerArtifact._OptimizeAssembly)" Condition="'%(DesktopCompilerArtifact._OptimizeAssembly)' != ''">
-      <Output TaskParameter="CopiedFiles" ItemName="FileWrites"/>
+      <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
     </Copy>
   </Target>
   
-  <Target Name="_GenerateSwrFile" 
-          AfterTargets="Build"
-          BeforeTargets="SwixBuild"
-          DependsOnTargets="_SetSwrFilePath;InitializeDesktopCompilerArtifacts;_PrepareDesktopCompilerArtifactsForOptimization;ApplyOptimizations"
-          Outputs="$(_SwrFilePath)"
-          Condition="'$(DotNetBuildFromSource)' != 'true'">
+  <Target Name="_GenerateSwrFile" AfterTargets="Build" BeforeTargets="SwixBuild" DependsOnTargets="_SetSwrFilePath;InitializeDesktopCompilerArtifacts;_PrepareDesktopCompilerArtifactsForOptimization;ApplyOptimizations" Outputs="$(_SwrFilePath)" Condition="'$(DotNetBuildFromSource)' != 'true'">
 
     <ItemGroup>
       <_File Include="@(DesktopCompilerArtifact)">
@@ -68,15 +55,15 @@
         <NGenApplicationString Condition="'%(DesktopCompilerArtifact.NGenApplication)' != ''"> vs.file.ngenApplication="[installDir]\MSBuild\Current\Bin\Roslyn\%(DesktopCompilerArtifact.NGenApplication)"</NGenApplicationString>
       </_File>
 
-      <_FileEntries Include='file source="%(_File.Path)"%(_File.NGenArchitectureString)%(_File.NGenPriorityString)%(_File.NGenApplicationString)'/>
+      <_FileEntries Include="file source=&quot;%(_File.Path)&quot;%(_File.NGenArchitectureString)%(_File.NGenPriorityString)%(_File.NGenApplicationString)" />
 
       <!-- Satellite assemblies -->
-      <_SatelliteAssembly Include="$(ArtifactsBinDir)Microsoft.CodeAnalysis\$(Configuration)\netstandard2.0\**\*.resources.dll"/>
-      <_SatelliteAssembly Include="$(ArtifactsBinDir)Microsoft.CodeAnalysis.CSharp\$(Configuration)\netstandard2.0\**\*.resources.dll"/>
-      <_SatelliteAssembly Include="$(ArtifactsBinDir)Microsoft.CodeAnalysis.Scripting\$(Configuration)\netstandard2.0\**\*.resources.dll"/>
-      <_SatelliteAssembly Include="$(ArtifactsBinDir)Microsoft.CodeAnalysis.CSharp.Scripting\$(Configuration)\netstandard2.0\**\*.resources.dll"/>
-      <_SatelliteAssembly Include="$(ArtifactsBinDir)Microsoft.CodeAnalysis.VisualBasic\$(Configuration)\netstandard2.0\**\*.resources.dll"/>
-      <_SatelliteAssembly Include="$(ArtifactsBinDir)Microsoft.Build.Tasks.CodeAnalysis\$(Configuration)\net472\**\*.resources.dll"/>
+      <_SatelliteAssembly Include="$(ArtifactsBinDir)Microsoft.CodeAnalysis\$(Configuration)\netstandard2.0\**\*.resources.dll" />
+      <_SatelliteAssembly Include="$(ArtifactsBinDir)Microsoft.CodeAnalysis.CSharp\$(Configuration)\netstandard2.0\**\*.resources.dll" />
+      <_SatelliteAssembly Include="$(ArtifactsBinDir)Microsoft.CodeAnalysis.Scripting\$(Configuration)\netstandard2.0\**\*.resources.dll" />
+      <_SatelliteAssembly Include="$(ArtifactsBinDir)Microsoft.CodeAnalysis.CSharp.Scripting\$(Configuration)\netstandard2.0\**\*.resources.dll" />
+      <_SatelliteAssembly Include="$(ArtifactsBinDir)Microsoft.CodeAnalysis.VisualBasic\$(Configuration)\netstandard2.0\**\*.resources.dll" />
+      <_SatelliteAssembly Include="$(ArtifactsBinDir)Microsoft.Build.Tasks.CodeAnalysis\$(Configuration)\net472\**\*.resources.dll" />
 
       <_CsSatellite Include="@(_SatelliteAssembly)" Condition="'%(_SatelliteAssembly.RecursiveDir)' == 'cs\'">
         <_FileEntries>file source=%(Identity)</_FileEntries>
@@ -192,13 +179,13 @@ folder InstallDir:\MSBuild\Current\Bin\Roslyn\zh-Hant
       </_Lines>
     </PropertyGroup>
     
-    <WriteLinesToFile File="$(_SwrFilePath)" Lines="$(_Lines)" Overwrite="true"/>
+    <WriteLinesToFile File="$(_SwrFilePath)" Lines="$(_Lines)" Overwrite="true" />
 
     <ItemGroup>
-      <FileWrites Include="$(_SwrFilePath)"/>
-      <SwrFile Include="$(_SwrFilePath)"/>
+      <FileWrites Include="$(_SwrFilePath)" />
+      <SwrFile Include="$(_SwrFilePath)" />
     </ItemGroup>
   </Target>
 
-  <Import Project="..\..\..\NuGet\Microsoft.Net.Compilers.Toolset\DesktopCompilerArtifacts.targets"/>
+  <Import Project="..\..\..\NuGet\Microsoft.Net.Compilers.Toolset\DesktopCompilerArtifacts.targets" />
 </Project>

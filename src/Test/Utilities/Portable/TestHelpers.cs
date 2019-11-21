@@ -97,8 +97,7 @@ namespace Roslyn.Test.Utilities
             Func<SyntaxNode, bool> syntaxNodePredicate = null,
             bool argumentOrderDoesNotMatter = false)
         {
-            Debug.Assert(code is Microsoft.CodeAnalysis.CSharp.ErrorCode ||
-                         code is Microsoft.CodeAnalysis.VisualBasic.ERRID ||
+            Debug.Assert(code is Microsoft.CodeAnalysis.CSharp.ErrorCode || 
                          code is int ||
                          code is string);
 

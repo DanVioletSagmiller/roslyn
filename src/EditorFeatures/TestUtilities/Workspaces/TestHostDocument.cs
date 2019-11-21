@@ -135,23 +135,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
             }
         }
 
-        public TestHostDocument(
-            string text = "", string displayName = "",
-            SourceCodeKind sourceCodeKind = SourceCodeKind.Regular,
-            DocumentId? id = null, string? filePath = null,
-            IReadOnlyList<string>? folders = null)
-        {
-            _exportProvider = TestExportProvider.ExportProviderWithCSharpAndVisualBasic;
-            _id = id;
-            _initialText = text;
-            Name = displayName;
-            SourceCodeKind = sourceCodeKind;
-            Loader = new TestDocumentLoader(this, text);
-            FilePath = filePath;
-            _folders = folders;
-            _roles = s_defaultRoles;
-        }
-
         internal void SetProject(TestHostProject project)
         {
             _project = project;

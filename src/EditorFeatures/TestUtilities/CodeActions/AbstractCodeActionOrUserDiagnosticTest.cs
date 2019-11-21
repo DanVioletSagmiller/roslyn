@@ -81,9 +81,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeActions
         protected TestWorkspace CreateWorkspaceFromOptions(
             string initialMarkup, TestParameters parameters)
         {
-            var workspace = TestWorkspace.IsWorkspaceElement(initialMarkup)
-                 ? TestWorkspace.Create(initialMarkup, openDocuments: false)
-                 : CreateWorkspaceFromFile(initialMarkup, parameters);
+            var workspace = CreateWorkspaceFromFile(initialMarkup, parameters);
 
             workspace.ApplyOptions(parameters.options);
 
@@ -324,150 +322,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeActions
             return Tuple.Create(oldSolution, newSolution);
         }
 
-        internal Task TestInRegularAndScriptAsync(
-            string initialMarkup,
-            string expectedMarkup,
-            int index = 0,
-            CodeActionPriority? priority = null,
-            CompilationOptions compilationOptions = null,
-            IDictionary<OptionKey, object> options = null,
-            object fixProviderData = null,
-            ParseOptions parseOptions = null,
-            string title = null)
-        {
-            return TestInRegularAndScript1Async(
-                initialMarkup, expectedMarkup, index, priority,
-                new TestParameters(parseOptions, compilationOptions, options, fixProviderData, index, title: title));
-        }
-
-        internal async Task TestInRegularAndScript1Async(
-            string initialMarkup,
-            string expectedMarkup,
-            int index = 0,
-            CodeActionPriority? priority = null,
-            TestParameters parameters = default)
-        {
-            parameters = parameters.WithIndex(index);
-            await TestAsync(initialMarkup, expectedMarkup, priority, WithRegularOptions(parameters));
-            await TestAsync(initialMarkup, expectedMarkup, priority, WithScriptOptions(parameters));
-        }
-
-        internal Task TestAsync(
-            string initialMarkup, string expectedMarkup,
-            ParseOptions parseOptions,
-            CompilationOptions compilationOptions = null,
-            int index = 0, IDictionary<OptionKey, object> options = null,
-            object fixProviderData = null,
-            CodeActionPriority? priority = null)
-        {
-            return TestAsync(
-                initialMarkup,
-                expectedMarkup, priority,
-                new TestParameters(
-                    parseOptions, compilationOptions, options, fixProviderData, index));
-        }
-
-        private async Task TestAsync(
-            string initialMarkup,
-            string expectedMarkup,
-            CodeActionPriority? priority,
-            TestParameters parameters)
-        {
-            MarkupTestFile.GetSpans(
-                expectedMarkup.NormalizeLineEndings(),
-                out var expected, out IDictionary<string, ImmutableArray<TextSpan>> spanMap);
-
-            var conflictSpans = spanMap.GetOrAdd("Conflict", _ => ImmutableArray<TextSpan>.Empty);
-            var renameSpans = spanMap.GetOrAdd("Rename", _ => ImmutableArray<TextSpan>.Empty);
-            var warningSpans = spanMap.GetOrAdd("Warning", _ => ImmutableArray<TextSpan>.Empty);
-            var navigationSpans = spanMap.GetOrAdd("Navigation", _ => ImmutableArray<TextSpan>.Empty);
-
-            using (var workspace = CreateWorkspaceFromOptions(initialMarkup, parameters))
-            {
-                var (_, action) = await GetCodeActionsAsync(workspace, parameters);
-                await TestActionAsync(
-                    workspace, expected, action,
-                    conflictSpans, renameSpans, warningSpans, navigationSpans,
-                    parameters);
-            }
-        }
-
-        internal async Task<Tuple<Solution, Solution>> TestActionAsync(
-            TestWorkspace workspace, string expected,
-            CodeAction action,
-            ImmutableArray<TextSpan> conflictSpans,
-            ImmutableArray<TextSpan> renameSpans,
-            ImmutableArray<TextSpan> warningSpans,
-            ImmutableArray<TextSpan> navigationSpans,
-            TestParameters parameters)
-        {
-            var operations = await VerifyActionAndGetOperationsAsync(workspace, action, parameters);
-            return await TestOperationsAsync(
-                workspace, expected, operations, conflictSpans, renameSpans,
-                warningSpans, navigationSpans, expectedChangedDocumentId: null, parseOptions: parameters.parseOptions);
-        }
-
-        protected async Task<Tuple<Solution, Solution>> TestOperationsAsync(
-            TestWorkspace workspace,
-            string expectedText,
-            ImmutableArray<CodeActionOperation> operations,
-            ImmutableArray<TextSpan> conflictSpans,
-            ImmutableArray<TextSpan> renameSpans,
-            ImmutableArray<TextSpan> warningSpans,
-            ImmutableArray<TextSpan> navigationSpans,
-            DocumentId expectedChangedDocumentId,
-            ParseOptions parseOptions = null)
-        {
-            var appliedChanges = ApplyOperationsAndGetSolution(workspace, operations);
-            var oldSolution = appliedChanges.Item1;
-            var newSolution = appliedChanges.Item2;
-
-            if (TestWorkspace.IsWorkspaceElement(expectedText))
-            {
-                await VerifyAgainstWorkspaceDefinitionAsync(expectedText, newSolution);
-                return Tuple.Create(oldSolution, newSolution);
-            }
-
-            var document = GetDocumentToVerify(expectedChangedDocumentId, oldSolution, newSolution);
-
-            var fixedRoot = await document.GetSyntaxRootAsync();
-            var actualText = fixedRoot.ToFullString();
-
-            // To help when a user just writes a test (and supplied no 'expectedText') just print
-            // out the entire 'actualText' (without any trimming).  in the case that we have both,
-            // call the normal AssertEx helper which will print out a good diff.
-            if (expectedText == "")
-            {
-                Assert.Equal((object)expectedText, actualText);
-            }
-            else
-            {
-                AssertEx.EqualOrDiff(expectedText, actualText);
-            }
-
-            TestAnnotations(conflictSpans, ConflictAnnotation.Kind);
-            TestAnnotations(renameSpans, RenameAnnotation.Kind);
-            TestAnnotations(warningSpans, WarningAnnotation.Kind);
-            TestAnnotations(navigationSpans, NavigationAnnotation.Kind);
-
-            return Tuple.Create(oldSolution, newSolution);
-
-            void TestAnnotations(ImmutableArray<TextSpan> expectedSpans, string annotationKind)
-            {
-                var annotatedItems = fixedRoot.GetAnnotatedNodesAndTokens(annotationKind).OrderBy(s => s.SpanStart).ToList();
-
-                Assert.True(expectedSpans.Length == annotatedItems.Count,
-                    $"Annotations of kind '{annotationKind}' didn't match. Expected: {expectedSpans.Length}. Actual: {annotatedItems.Count}.");
-
-                for (var i = 0; i < Math.Min(expectedSpans.Length, annotatedItems.Count); i++)
-                {
-                    var actual = annotatedItems[i].Span;
-                    var expected = expectedSpans[i];
-                    Assert.Equal(expected, actual);
-                }
-            }
-        }
-
         protected static Document GetDocumentToVerify(DocumentId expectedChangedDocumentId, Solution oldSolution, Solution newSolution)
         {
             Document document;
@@ -487,59 +341,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeActions
             }
 
             return document;
-        }
-
-        private static async Task VerifyAgainstWorkspaceDefinitionAsync(string expectedText, Solution newSolution)
-        {
-            using (var expectedWorkspace = TestWorkspace.Create(expectedText))
-            {
-                var expectedSolution = expectedWorkspace.CurrentSolution;
-                Assert.Equal(expectedSolution.Projects.Count(), newSolution.Projects.Count());
-                foreach (var project in newSolution.Projects)
-                {
-                    var expectedProject = expectedSolution.GetProjectsByName(project.Name).Single();
-                    Assert.Equal(expectedProject.Documents.Count(), project.Documents.Count());
-
-                    foreach (var doc in project.Documents)
-                    {
-                        var root = await doc.GetSyntaxRootAsync();
-                        var expectedDocument = expectedProject.Documents.Single(d => d.Name == doc.Name);
-                        var expectedRoot = await expectedDocument.GetSyntaxRootAsync();
-                        VerifyExpectedDocumentText(expectedRoot.ToFullString(), root.ToFullString());
-                    }
-
-                    foreach (var additionalDoc in project.AdditionalDocuments)
-                    {
-                        var root = await additionalDoc.GetTextAsync();
-                        var expectedDocument = expectedProject.AdditionalDocuments.Single(d => d.Name == additionalDoc.Name);
-                        var expectedRoot = await expectedDocument.GetTextAsync();
-                        VerifyExpectedDocumentText(expectedRoot.ToString(), root.ToString());
-                    }
-
-                    foreach (var analyzerConfigDoc in project.AnalyzerConfigDocuments)
-                    {
-                        var root = await analyzerConfigDoc.GetTextAsync();
-                        var expectedDocument = expectedProject.AnalyzerConfigDocuments.Single(d => d.FilePath == analyzerConfigDoc.FilePath);
-                        var expectedRoot = await expectedDocument.GetTextAsync();
-                        VerifyExpectedDocumentText(expectedRoot.ToString(), root.ToString());
-                    }
-                }
-            }
-
-            return;
-
-            // Local functions.
-            static void VerifyExpectedDocumentText(string expected, string actual)
-            {
-                if (expected == "")
-                {
-                    Assert.Equal((object)expected, actual);
-                }
-                else
-                {
-                    Assert.Equal(expected, actual);
-                }
-            }
         }
 
         internal async Task<ImmutableArray<CodeActionOperation>> VerifyActionAndGetOperationsAsync(
@@ -654,33 +455,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeActions
             }
 
             return result;
-        }
-
-        /// <summary>
-        /// Tests all the code actions for the given <paramref name="input"/> string.  Each code
-        /// action must produce the corresponding output in the <paramref name="outputs"/> array.
-        /// 
-        /// Will throw if there are more outputs than code actions or more code actions than outputs.
-        /// </summary>
-        protected Task TestAllInRegularAndScriptAsync(
-            string input,
-            params string[] outputs)
-        {
-            return TestAllInRegularAndScriptAsync(input, parameters: default, outputs);
-        }
-
-        protected async Task TestAllInRegularAndScriptAsync(
-            string input,
-            TestParameters parameters,
-            params string[] outputs)
-        {
-            for (var index = 0; index < outputs.Length; index++)
-            {
-                var output = outputs[index];
-                await TestInRegularAndScript1Async(input, output, index, parameters: parameters);
-            }
-
-            await TestActionCountAsync(input, outputs.Length, parameters);
         }
     }
 }

@@ -11,10 +11,4 @@
       .NET Compiler Platform ("Roslyn") support for editor features inside the Visual Studio editor.
     </PackageDescription>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\EditorFeatures\Core\Microsoft.CodeAnalysis.EditorFeatures.csproj" />
-    <ProjectReference Include="..\EditorFeatures\CSharp\Microsoft.CodeAnalysis.CSharp.EditorFeatures.csproj" />
-    <ProjectReference Include="..\EditorFeatures\VisualBasic\Microsoft.CodeAnalysis.VisualBasic.EditorFeatures.vbproj" />
-  </ItemGroup>
 </Project>

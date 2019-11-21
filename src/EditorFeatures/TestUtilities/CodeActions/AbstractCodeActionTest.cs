@@ -158,21 +158,5 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeActions
                 option.Value = true;
             }
         }
-
-        internal Task TestWithPickMembersDialogAsync(
-            string initialMarkup,
-            string expectedMarkup,
-            string[] chosenSymbols,
-            Action<ImmutableArray<PickMembersOption>> optionsCallback = null,
-            int index = 0,
-            CodeActionPriority? priority = null,
-            TestParameters parameters = default)
-        {
-            var pickMembersService = new TestPickMembersService(chosenSymbols.AsImmutableOrNull(), optionsCallback);
-            return TestInRegularAndScript1Async(
-                initialMarkup, expectedMarkup,
-                index, priority,
-                parameters.WithFixProviderData(pickMembersService));
-        }
     }
 }

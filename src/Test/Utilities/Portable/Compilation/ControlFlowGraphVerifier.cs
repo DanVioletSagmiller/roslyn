@@ -11,8 +11,6 @@ using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.PooledObjects;
 using Microsoft.CodeAnalysis.Test.Extensions;
-using Microsoft.CodeAnalysis.VisualBasic;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Roslyn.Utilities;
 using Xunit;
 
@@ -336,21 +334,6 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
 
             bool doCaptureVerification = true;
 
-            if (graph.OriginalOperation.Language == LanguageNames.VisualBasic)
-            {
-                var model = compilation.GetSemanticModel(graph.OriginalOperation.Syntax.SyntaxTree);
-                if (model.GetDiagnostics(graph.OriginalOperation.Syntax.Span).
-                        Any(d => d.Code == (int)VisualBasic.ERRID.ERR_GotoIntoWith ||
-                                 d.Code == (int)VisualBasic.ERRID.ERR_GotoIntoFor ||
-                                 d.Code == (int)VisualBasic.ERRID.ERR_GotoIntoSyncLock ||
-                                 d.Code == (int)VisualBasic.ERRID.ERR_GotoIntoUsing))
-                {
-                    // Invalid branches like that are often causing reports about
-                    // using captures before they are initialized.
-                    doCaptureVerification = false;
-                }
-            }
-
             if (doCaptureVerification)
             {
                 verifyCaptures();
@@ -393,29 +376,6 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
                         }
                     }
 
-                    for (var j = 0; j < block.Operations.Length; j++)
-                    {
-                        var operation = block.Operations[j];
-                        if (operation is IFlowCaptureOperation capture)
-                        {
-                            assertCaptureReferences(currentState, capture.Value, block, j, longLivedIds, referencedIds);
-                            Assert.True(currentState.Add(capture.Id), $"Operation [{j}] in [{getBlockId(block)}] re-initialized capture [{capture.Id.Value}].");
-                        }
-                        else
-                        {
-                            assertCaptureReferences(currentState, operation, block, j, longLivedIds, referencedIds);
-                        }
-                    }
-
-                    if (block.BranchValue != null)
-                    {
-                        assertCaptureReferences(currentState, block.BranchValue, block, block.Operations.Length, longLivedIds, referencedIds);
-
-                        if (block.ConditionalSuccessor != null)
-                        {
-                            adjustEntryStateForDestination(entryStates, block.ConditionalSuccessor, currentState);
-                        }
-                    }
 
                     adjustEntryStateForDestination(entryStates, block.FallThroughSuccessor, currentState);
 
@@ -488,18 +448,6 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
                     {
                         foreach (CaptureId id in region.CaptureIds)
                         {
-                            if (referencedInLastOperation.Contains(id) ||
-                                longLivedIds.Contains(id) ||
-                                isCSharpEmptyObjectInitializerCapture(region, block, id) ||
-                                isWithStatementTargetCapture(region, block, id) ||
-                                isSwitchTargetCapture(region, block, id) ||
-                                isForEachEnumeratorCapture(region, block, id) ||
-                                isConditionalXMLAccessReceiverCapture(region, block, id) ||
-                                isConditionalAccessCaptureUsedAfterNullCheck(lastOperation, region, block, id) ||
-                                (referencedIds.Contains(id) && isAggregateGroupCapture(lastOperation, region, block, id)))
-                            {
-                                continue;
-                            }
 
                             if (region.LastBlockOrdinal != block.Ordinal && referencedIds.Contains(id))
                             {
@@ -555,183 +503,9 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
                 return false;
             }
 
-            bool isWithStatementTargetCapture(ControlFlowRegion region, BasicBlock block, CaptureId id)
-            {
-                if (graph.OriginalOperation.Language != LanguageNames.VisualBasic)
-                {
-                    return false;
-                }
-
-                foreach (IFlowCaptureOperation candidate in getFlowCaptureOperationsFromBlocksInRegion(region, block.Ordinal))
-                {
-                    if (candidate.Id.Equals(id))
-                    {
-                        VisualBasicSyntaxNode syntax = applyParenthesizedIfAnyVB((VisualBasicSyntaxNode)candidate.Syntax);
-                        VisualBasicSyntaxNode parent = syntax.Parent;
-
-                        if (parent is WithStatementSyntax with &&
-                            with.Expression == syntax)
-                        {
-                            return true;
-                        }
-
-                        break;
-                    }
-                }
-
-                return false;
-            }
-
-            bool isConditionalXMLAccessReceiverCapture(ControlFlowRegion region, BasicBlock block, CaptureId id)
-            {
-                if (graph.OriginalOperation.Language != LanguageNames.VisualBasic)
-                {
-                    return false;
-                }
-
-                foreach (IFlowCaptureOperation candidate in getFlowCaptureOperationsFromBlocksInRegion(region, block.Ordinal))
-                {
-                    if (candidate.Id.Equals(id))
-                    {
-                        VisualBasicSyntaxNode syntax = applyParenthesizedIfAnyVB((VisualBasicSyntaxNode)candidate.Syntax);
-                        VisualBasicSyntaxNode parent = syntax.Parent;
-
-                        if (parent is VisualBasic.Syntax.ConditionalAccessExpressionSyntax conditional &&
-                            conditional.Expression == syntax &&
-                            conditional.WhenNotNull.DescendantNodesAndSelf().
-                                Any(n =>
-                                         n.IsKind(VisualBasic.SyntaxKind.XmlElementAccessExpression) ||
-                                         n.IsKind(VisualBasic.SyntaxKind.XmlDescendantAccessExpression) ||
-                                         n.IsKind(VisualBasic.SyntaxKind.XmlAttributeAccessExpression)))
-                        {
-                            // https://github.com/dotnet/roslyn/issues/27564: It looks like there is a bug in IOperation tree around XmlMemberAccessExpressionSyntax,
-                            // a None operation is created and all children are dropped.
-                            return true;
-                        }
-
-                        break;
-                    }
-                }
-
-                return false;
-            }
-
             bool isEmptySwitchExpressionResult(IFlowCaptureReferenceOperation reference)
             {
                 return reference.Syntax is CSharp.Syntax.SwitchExpressionSyntax switchExpr && switchExpr.Arms.Count == 0;
-            }
-
-            bool isSwitchTargetCapture(ControlFlowRegion region, BasicBlock block, CaptureId id)
-            {
-                foreach (IFlowCaptureOperation candidate in getFlowCaptureOperationsFromBlocksInRegion(region, block.Ordinal))
-                {
-                    if (candidate.Id.Equals(id))
-                    {
-                        switch (candidate.Language)
-                        {
-                            case LanguageNames.CSharp:
-                                {
-                                    CSharpSyntaxNode syntax = applyParenthesizedIfAnyCS((CSharpSyntaxNode)candidate.Syntax);
-                                    if (syntax.Parent is CSharp.Syntax.SwitchStatementSyntax switchStmt && switchStmt.Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-
-                                    if (syntax.Parent is CSharp.Syntax.SwitchExpressionSyntax switchExpr && switchExpr.GoverningExpression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                }
-
-                                break;
-
-                            case LanguageNames.VisualBasic:
-                                {
-                                    VisualBasicSyntaxNode syntax = applyParenthesizedIfAnyVB((VisualBasicSyntaxNode)candidate.Syntax);
-                                    if (syntax.Parent is VisualBasic.Syntax.SelectStatementSyntax switchStmt && switchStmt.Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                }
-
-                                break;
-                        }
-
-                        break;
-                    }
-                }
-
-                return false;
-            }
-
-            bool isForEachEnumeratorCapture(ControlFlowRegion region, BasicBlock block, CaptureId id)
-            {
-                foreach (IFlowCaptureOperation candidate in getFlowCaptureOperationsFromBlocksInRegion(region, block.Ordinal))
-                {
-                    if (candidate.Id.Equals(id))
-                    {
-                        switch (candidate.Language)
-                        {
-                            case LanguageNames.CSharp:
-                                {
-                                    CSharpSyntaxNode syntax = applyParenthesizedIfAnyCS((CSharpSyntaxNode)candidate.Syntax);
-                                    if (syntax.Parent is CSharp.Syntax.CommonForEachStatementSyntax forEach && forEach.Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                }
-
-                                break;
-
-                            case LanguageNames.VisualBasic:
-                                {
-                                    VisualBasicSyntaxNode syntax = applyParenthesizedIfAnyVB((VisualBasicSyntaxNode)candidate.Syntax);
-                                    if (syntax.Parent is VisualBasic.Syntax.ForEachStatementSyntax forEach && forEach.Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                }
-
-                                break;
-                        }
-
-                        break;
-                    }
-                }
-
-                return false;
-            }
-
-            bool isAggregateGroupCapture(IOperation operation, ControlFlowRegion region, BasicBlock block, CaptureId id)
-            {
-                if (graph.OriginalOperation.Language != LanguageNames.VisualBasic)
-                {
-                    return false;
-                }
-
-                foreach (IFlowCaptureOperation candidate in getFlowCaptureOperationsFromBlocksInRegion(region, block.Ordinal))
-                {
-                    if (candidate.Id.Equals(id))
-                    {
-                        VisualBasicSyntaxNode syntax = applyParenthesizedIfAnyVB((VisualBasicSyntaxNode)candidate.Syntax);
-
-                        foreach (ITranslatedQueryOperation query in operation.DescendantsAndSelf().OfType<ITranslatedQueryOperation>())
-                        {
-                            if (query.Syntax is VisualBasic.Syntax.QueryExpressionSyntax querySyntax &&
-                                querySyntax.Clauses.AsSingleton() is VisualBasic.Syntax.AggregateClauseSyntax aggregate &&
-                                aggregate.AggregateKeyword.SpanStart < candidate.Syntax.SpanStart &&
-                                aggregate.IntoKeyword.SpanStart > candidate.Syntax.SpanStart &&
-                                query.Operation.Kind == OperationKind.AnonymousObjectCreation)
-                            {
-                                return true;
-                            }
-                        }
-
-                        break;
-                    }
-                }
-
-                return false;
             }
 
             void adjustEntryStateForDestination(ArrayBuilder<PooledHashSet<CaptureId>> entryStates, ControlFlowBranch branch, PooledHashSet<CaptureId> state)
@@ -790,68 +564,6 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
                 return entryState;
             }
 
-            void assertCaptureReferences(
-                PooledHashSet<CaptureId> state, IOperation operation, BasicBlock block, int operationIndex,
-                PooledHashSet<CaptureId> longLivedIds, PooledHashSet<CaptureId> referencedIds)
-            {
-                foreach (IFlowCaptureReferenceOperation reference in operation.DescendantsAndSelf().OfType<IFlowCaptureReferenceOperation>())
-                {
-                    CaptureId id = reference.Id;
-                    referencedIds.Add(id);
-
-                    if (isLongLivedCaptureReference(reference, block.EnclosingRegion))
-                    {
-                        longLivedIds.Add(id);
-                    }
-
-                    Assert.True(state.Contains(id) || isCaptureFromEnclosingGraph(id) || isEmptySwitchExpressionResult(reference),
-                        $"Operation [{operationIndex}] in [{getBlockId(block)}] uses not initialized capture [{id.Value}].");
-
-                    // Except for a few specific scenarios, any references to captures should either be long-lived capture references,
-                    // or they should come from the enclosing region.
-                    Assert.True(block.EnclosingRegion.CaptureIds.Contains(id) || longLivedIds.Contains(id) ||
-                                ((isFirstOperandOfDynamicOrUserDefinedLogicalOperator(reference) ||
-                                     isIncrementedNullableForToLoopControlVariable(reference) ||
-                                     isConditionalAccessReceiver(reference) ||
-                                     isCoalesceAssignmentTarget(reference)) &&
-                                 block.EnclosingRegion.EnclosingRegion.CaptureIds.Contains(id)),
-                        $"Operation [{operationIndex}] in [{getBlockId(block)}] uses capture [{id.Value}] from another region. Should the regions be merged?");
-                }
-            }
-
-            bool isConditionalAccessReceiver(IFlowCaptureReferenceOperation reference)
-            {
-                SyntaxNode captureReferenceSyntax = reference.Syntax;
-
-                switch (captureReferenceSyntax.Language)
-                {
-                    case LanguageNames.CSharp:
-                        {
-                            CSharpSyntaxNode syntax = applyParenthesizedIfAnyCS((CSharpSyntaxNode)captureReferenceSyntax);
-                            if (syntax.Parent is CSharp.Syntax.ConditionalAccessExpressionSyntax access &&
-                                access.Expression == syntax)
-                            {
-                                return true;
-                            }
-                        }
-                        break;
-
-                    case LanguageNames.VisualBasic:
-                        {
-                            VisualBasicSyntaxNode syntax = applyParenthesizedIfAnyVB((VisualBasicSyntaxNode)captureReferenceSyntax);
-                            if (syntax.Parent is VisualBasic.Syntax.ConditionalAccessExpressionSyntax access &&
-                                access.Expression == syntax)
-                            {
-                                return true;
-                            }
-                        }
-
-                        break;
-                }
-
-                return false;
-            }
-
             bool isCoalesceAssignmentTarget(IFlowCaptureReferenceOperation reference)
             {
                 if (reference.Language != LanguageNames.CSharp)
@@ -873,7 +585,8 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
                         (binOp.OperatorKind == Operations.BinaryOperatorKind.And || binOp.OperatorKind == Operations.BinaryOperatorKind.Or) &&
                         (binOp.OperatorMethod != null ||
                          (ITypeSymbolHelpers.IsDynamicType(binOp.Type) &&
-                          (ITypeSymbolHelpers.IsDynamicType(binOp.LeftOperand.Type) || ITypeSymbolHelpers.IsDynamicType(binOp.RightOperand.Type)))))
+                          (ITypeSymbolHelpers.IsDynamicType(binOp.LeftOperand.Type) 
+                          || ITypeSymbolHelpers.IsDynamicType(binOp.RightOperand.Type)))))
                     {
                         if (reference.Language == LanguageNames.CSharp)
                         {
@@ -885,50 +598,7 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
                                 return true;
                             }
                         }
-                        else if (reference.Language == LanguageNames.VisualBasic)
-                        {
-                            var referenceSyntax = applyParenthesizedIfAnyVB((VisualBasicSyntaxNode)reference.Syntax);
-                            if (binOp.Syntax is VisualBasic.Syntax.BinaryExpressionSyntax binOpSyntax &&
-                                (binOpSyntax.Kind() == VisualBasic.SyntaxKind.AndAlsoExpression || binOpSyntax.Kind() == VisualBasic.SyntaxKind.OrElseExpression) &&
-                                binOpSyntax.Left == referenceSyntax &&
-                                binOpSyntax.Right == applyParenthesizedIfAnyVB((VisualBasicSyntaxNode)binOp.RightOperand.Syntax))
-                            {
-                                return true;
-                            }
-                            else if (binOp.Syntax is VisualBasic.Syntax.RangeCaseClauseSyntax range &&
-                                binOp.OperatorKind == Operations.BinaryOperatorKind.And &&
-                                range.LowerBound == referenceSyntax &&
-                                range.UpperBound == applyParenthesizedIfAnyVB((VisualBasicSyntaxNode)binOp.RightOperand.Syntax))
-                            {
-                                return true;
-                            }
-                            else if (binOp.Syntax is VisualBasic.Syntax.CaseStatementSyntax caseStmt &&
-                                binOp.OperatorKind == Operations.BinaryOperatorKind.Or &&
-                                caseStmt.Cases.Count > 1 &&
-                                (caseStmt == referenceSyntax || caseStmt.Cases.Contains(referenceSyntax as CaseClauseSyntax)) &&
-                                caseStmt.Cases.Contains(applyParenthesizedIfAnyVB((VisualBasicSyntaxNode)binOp.RightOperand.Syntax) as CaseClauseSyntax))
-                            {
-                                return true;
-                            }
-                        }
                     }
-                }
-
-                return false;
-            }
-
-            bool isIncrementedNullableForToLoopControlVariable(IFlowCaptureReferenceOperation reference)
-            {
-                if (reference.Parent is ISimpleAssignmentOperation assignment &&
-                    assignment.IsImplicit &&
-                    assignment.Target == reference &&
-                    ITypeSymbolHelpers.IsNullableType(reference.Type) &&
-                    assignment.Syntax.Parent is VisualBasic.Syntax.ForStatementSyntax forStmt &&
-                    assignment.Syntax == forStmt.ControlVariable &&
-                    reference.Syntax == assignment.Syntax &&
-                    assignment.Value.Syntax == forStmt.StepClause.StepValue)
-                {
-                    return true;
                 }
 
                 return false;
@@ -979,18 +649,6 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
                                 }
                             }
                             break;
-
-                        case LanguageNames.VisualBasic:
-                            {
-                                VisualBasicSyntaxNode syntax = applyParenthesizedIfAnyVB((VisualBasicSyntaxNode)isNull.Operand.Syntax);
-                                if (syntax.Parent is VisualBasic.Syntax.ConditionalAccessExpressionSyntax access &&
-                                    access.Expression == syntax)
-                                {
-                                    whenNotNull = access.WhenNotNull;
-                                }
-                            }
-
-                            break;
                     }
                 }
 
@@ -1017,166 +675,84 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
 
             bool isLongLivedCaptureReferenceSyntax(SyntaxNode captureReferenceSyntax)
             {
-                switch (captureReferenceSyntax.Language)
+                var syntax = (CSharpSyntaxNode)captureReferenceSyntax;
+
+
+                switch (syntax.Kind())
                 {
-                    case LanguageNames.CSharp:
+                    case CSharp.SyntaxKind.ObjectCreationExpression:
+                        if (((CSharp.Syntax.ObjectCreationExpressionSyntax)syntax).Initializer?.Expressions.Any() == true)
                         {
-                            var syntax = (CSharpSyntaxNode)captureReferenceSyntax;
-                            switch (syntax.Kind())
-                            {
-                                case CSharp.SyntaxKind.ObjectCreationExpression:
-                                    if (((CSharp.Syntax.ObjectCreationExpressionSyntax)syntax).Initializer?.Expressions.Any() == true)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-                            }
-
-                            syntax = applyParenthesizedIfAnyCS(syntax);
-
-                            if (syntax.Parent?.Parent is CSharp.Syntax.UsingStatementSyntax usingStmt &&
-                                usingStmt.Declaration == syntax.Parent)
-                            {
-                                return true;
-                            }
-
-                            CSharpSyntaxNode parent = syntax.Parent;
-                            switch (parent?.Kind())
-                            {
-                                case CSharp.SyntaxKind.ForEachStatement:
-                                case CSharp.SyntaxKind.ForEachVariableStatement:
-                                    if (((CommonForEachStatementSyntax)parent).Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-
-                                case CSharp.SyntaxKind.Argument:
-                                    if ((parent = parent.Parent)?.Kind() == CSharp.SyntaxKind.BracketedArgumentList &&
-                                        (parent = parent.Parent)?.Kind() == CSharp.SyntaxKind.ImplicitElementAccess &&
-                                        parent.Parent is AssignmentExpressionSyntax assignment && assignment.Kind() == CSharp.SyntaxKind.SimpleAssignmentExpression &&
-                                        assignment.Left == parent &&
-                                        assignment.Parent?.Kind() == CSharp.SyntaxKind.ObjectInitializerExpression &&
-                                        (assignment.Right.Kind() == CSharp.SyntaxKind.CollectionInitializerExpression ||
-                                        assignment.Right.Kind() == CSharp.SyntaxKind.ObjectInitializerExpression))
-                                    {
-                                        return true;
-                                    }
-                                    break;
-
-                                case CSharp.SyntaxKind.LockStatement:
-                                    if (((LockStatementSyntax)syntax.Parent).Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-
-                                case CSharp.SyntaxKind.UsingStatement:
-                                    if (((CSharp.Syntax.UsingStatementSyntax)syntax.Parent).Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-
-                                case CSharp.SyntaxKind.SwitchStatement:
-                                    if (((CSharp.Syntax.SwitchStatementSyntax)syntax.Parent).Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-
-                                case CSharp.SyntaxKind.SwitchExpression:
-                                    if (((CSharp.Syntax.SwitchExpressionSyntax)syntax.Parent).GoverningExpression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-
-                                case CSharp.SyntaxKind.CoalesceAssignmentExpression:
-                                    if (((AssignmentExpressionSyntax)syntax.Parent).Left == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-                            }
+                            return true;
                         }
+                        break;
+                }
 
+                syntax = applyParenthesizedIfAnyCS(syntax);
+
+                if (syntax.Parent?.Parent is CSharp.Syntax.UsingStatementSyntax usingStmt &&
+                    usingStmt.Declaration == syntax.Parent)
+                {
+                    return true;
+                }
+
+                CSharpSyntaxNode parent = syntax.Parent;
+                switch (parent?.Kind())
+                {
+                    case CSharp.SyntaxKind.ForEachStatement:
+                    case CSharp.SyntaxKind.ForEachVariableStatement:
+                        if (((CommonForEachStatementSyntax)parent).Expression == syntax)
+                        {
+                            return true;
+                        }
                         break;
 
-                    case LanguageNames.VisualBasic:
+                    case CSharp.SyntaxKind.Argument:
+                        if ((parent = parent.Parent)?.Kind() == CSharp.SyntaxKind.BracketedArgumentList &&
+                            (parent = parent.Parent)?.Kind() == CSharp.SyntaxKind.ImplicitElementAccess &&
+                            parent.Parent is AssignmentExpressionSyntax assignment && assignment.Kind() == CSharp.SyntaxKind.SimpleAssignmentExpression &&
+                            assignment.Left == parent &&
+                            assignment.Parent?.Kind() == CSharp.SyntaxKind.ObjectInitializerExpression &&
+                            (assignment.Right.Kind() == CSharp.SyntaxKind.CollectionInitializerExpression ||
+                            assignment.Right.Kind() == CSharp.SyntaxKind.ObjectInitializerExpression))
                         {
-                            VisualBasicSyntaxNode syntax = applyParenthesizedIfAnyVB((VisualBasicSyntaxNode)captureReferenceSyntax);
-
-                            switch (syntax.Kind())
-                            {
-                                case VisualBasic.SyntaxKind.ForStatement:
-                                case VisualBasic.SyntaxKind.ForBlock:
-                                    return true;
-
-                                case VisualBasic.SyntaxKind.ObjectCreationExpression:
-                                    var objCreation = (VisualBasic.Syntax.ObjectCreationExpressionSyntax)syntax;
-                                    if ((objCreation.Initializer is VisualBasic.Syntax.ObjectMemberInitializerSyntax memberInit && memberInit.Initializers.Any()) ||
-                                        (objCreation.Initializer is VisualBasic.Syntax.ObjectCollectionInitializerSyntax collectionInit && collectionInit.Initializer.Initializers.Any()))
-                                    {
-                                        return true;
-                                    }
-                                    break;
-                            }
-
-                            VisualBasicSyntaxNode parent = syntax.Parent;
-                            switch (parent?.Kind())
-                            {
-                                case VisualBasic.SyntaxKind.ForEachStatement:
-                                    if (((VisualBasic.Syntax.ForEachStatementSyntax)parent).Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-
-                                case VisualBasic.SyntaxKind.ForStatement:
-                                    if (((VisualBasic.Syntax.ForStatementSyntax)parent).ToValue == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-
-                                case VisualBasic.SyntaxKind.ForStepClause:
-                                    if (((ForStepClauseSyntax)parent).StepValue == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-
-                                case VisualBasic.SyntaxKind.SyncLockStatement:
-                                    if (((VisualBasic.Syntax.SyncLockStatementSyntax)parent).Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-
-                                case VisualBasic.SyntaxKind.UsingStatement:
-                                    if (((VisualBasic.Syntax.UsingStatementSyntax)parent).Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-
-                                case VisualBasic.SyntaxKind.WithStatement:
-                                    if (((VisualBasic.Syntax.WithStatementSyntax)parent).Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-
-                                case VisualBasic.SyntaxKind.SelectStatement:
-                                    if (((VisualBasic.Syntax.SelectStatementSyntax)parent).Expression == syntax)
-                                    {
-                                        return true;
-                                    }
-                                    break;
-                            }
+                            return true;
                         }
+                        break;
 
+                    case CSharp.SyntaxKind.LockStatement:
+                        if (((LockStatementSyntax)syntax.Parent).Expression == syntax)
+                        {
+                            return true;
+                        }
+                        break;
+
+                    case CSharp.SyntaxKind.UsingStatement:
+                        if (((CSharp.Syntax.UsingStatementSyntax)syntax.Parent).Expression == syntax)
+                        {
+                            return true;
+                        }
+                        break;
+
+                    case CSharp.SyntaxKind.SwitchStatement:
+                        if (((CSharp.Syntax.SwitchStatementSyntax)syntax.Parent).Expression == syntax)
+                        {
+                            return true;
+                        }
+                        break;
+
+                    case CSharp.SyntaxKind.SwitchExpression:
+                        if (((CSharp.Syntax.SwitchExpressionSyntax)syntax.Parent).GoverningExpression == syntax)
+                        {
+                            return true;
+                        }
+                        break;
+
+                    case CSharp.SyntaxKind.CoalesceAssignmentExpression:
+                        if (((AssignmentExpressionSyntax)syntax.Parent).Left == syntax)
+                        {
+                            return true;
+                        }
                         break;
                 }
 
@@ -1186,16 +762,6 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
             CSharpSyntaxNode applyParenthesizedIfAnyCS(CSharpSyntaxNode syntax)
             {
                 while (syntax.Parent?.Kind() == CSharp.SyntaxKind.ParenthesizedExpression)
-                {
-                    syntax = syntax.Parent;
-                }
-
-                return syntax;
-            }
-
-            VisualBasicSyntaxNode applyParenthesizedIfAnyVB(VisualBasicSyntaxNode syntax)
-            {
-                while (syntax.Parent?.Kind() == VisualBasic.SyntaxKind.ParenthesizedExpression)
                 {
                     syntax = syntax.Parent;
                 }

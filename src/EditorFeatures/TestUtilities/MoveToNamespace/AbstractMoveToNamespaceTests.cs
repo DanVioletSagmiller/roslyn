@@ -85,11 +85,6 @@ namespace Microsoft.CodeAnalysis.Test.Utilities.MoveToNamespace
                     }
 
                 }
-
-                if (!optionCancelled && !string.IsNullOrEmpty(targetNamespace))
-                {
-                    await TestInRegularAndScriptAsync(markup, expectedMarkup);
-                }
             }
             else
             {

@@ -6,7 +6,6 @@ using Microsoft.CodeAnalysis.Test.Utilities;
 using Roslyn.Test.Utilities;
 using Xunit;
 using CS = Microsoft.CodeAnalysis.CSharp;
-using VB = Microsoft.CodeAnalysis.VisualBasic;
 
 namespace Microsoft.CodeAnalysis.UnitTests
 {
@@ -32,23 +31,6 @@ namespace Microsoft.CodeAnalysis.UnitTests
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void TestVisualBasicFormatting()
-        {
-            var text = @"
-Public Class C
-Public X As Integer
-End Class
-";
-            var expectedFormattedText = @"
-Public Class C
-    Public X As Integer
-End Class
-";
-
-            AssertFormatVB(expectedFormattedText, text);
-        }
-
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
         public void TestVisualBasicDefaultFormattingRules()
         {
             var rules = Formatter.GetDefaultFormattingRules(new AdhocWorkspace(), LanguageNames.VisualBasic);
@@ -60,12 +42,6 @@ End Class
         private void AssertFormatCSharp(string expected, string input)
         {
             var tree = CS.SyntaxFactory.ParseSyntaxTree(input);
-            AssertFormat(expected, tree);
-        }
-
-        private void AssertFormatVB(string expected, string input)
-        {
-            var tree = VB.SyntaxFactory.ParseSyntaxTree(input);
             AssertFormat(expected, tree);
         }
 

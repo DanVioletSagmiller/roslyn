@@ -1217,21 +1217,6 @@ class D { }";
             }
 
             [Fact, Trait(Traits.Feature, Traits.Features.CodeGeneration)]
-            public async Task RemoveAttributeWithMultipleAttributes()
-            {
-                // Multiple attributes.
-                var input = @"// Comment 1
-/*Comment2*/[ /*Comment3*/ System.Serializable /*Comment4*/, /*Comment5*/System.Flags /*Comment6*/] /*Comment7*/
-/* Comment 8*/
-class [|C|] { }";
-                var expected = @"// Comment 1
-/*Comment2*/[ /*Comment3*/  /*Comment5*/System.Flags /*Comment6*/] /*Comment7*/
-/* Comment 8*/
-class C { }";
-                await TestRemoveAttributeAsync<SyntaxNode>(input, expected, typeof(SerializableAttribute));
-            }
-
-            [Fact, Trait(Traits.Feature, Traits.Features.CodeGeneration)]
             public async Task RemoveAttributeWithMultipleAttributeLists()
             {
                 // Multiple attributes.
@@ -1246,24 +1231,6 @@ class [|C|] { }";
 /* Comment12*/
 class C { }";
                 await TestRemoveAttributeAsync<SyntaxNode>(input, expected, typeof(SerializableAttribute));
-            }
-
-            [Fact, Trait(Traits.Feature, Traits.Features.CodeGeneration)]
-            public async Task TestUpdateModifiers()
-            {
-                var input = @"public static class [|C|] // Comment 1
-{
-    // Comment 2
-}";
-                var expected = @"internal partial sealed class C // Comment 1
-{
-    // Comment 2
-}";
-                var eol = SyntaxFactory.EndOfLine(@"");
-                var newModifiers = new[] { SyntaxFactory.Token(SyntaxKind.InternalKeyword).WithLeadingTrivia(eol) }.Concat(
-                    CreateModifierTokens(new Editing.DeclarationModifiers(isSealed: true, isPartial: true), LanguageNames.CSharp));
-
-                await TestUpdateDeclarationAsync<ClassDeclarationSyntax>(input, expected, modifiers: newModifiers);
             }
 
             [Fact, Trait(Traits.Feature, Traits.Features.CodeGeneration)]

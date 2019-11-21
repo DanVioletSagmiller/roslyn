@@ -2156,7 +2156,7 @@ namespace Microsoft.CodeAnalysis.UnitTests.Diagnostics
                         syntaxContext.ReportDiagnostic(Diagnostic.Create(GetOperationDescriptor, node.GetLocation()));
                     }
                 },
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NumericLiteralExpression);
+                Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression);
         }
     }
 }

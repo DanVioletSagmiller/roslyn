@@ -26,51 +26,6 @@ namespace Microsoft.CodeAnalysis.Test.Utilities.CommentSelection
 
         abstract internal TestWorkspace GetWorkspace(string markup, ExportProvider exportProvider);
 
-        protected void ToggleComment(string markup, string expected)
-        {
-            ToggleCommentMultiple(markup, new string[] { expected });
-        }
-
-        protected void ToggleCommentMultiple(string markup, string[] expectedText)
-        {
-            using (var workspace = GetWorkspace(markup, GetExportProvider()))
-            {
-                var doc = workspace.Documents.First();
-                SetupSelection(doc.GetTextView(), doc.SelectedSpans.Select(s => Span.FromBounds(s.Start, s.End)));
-
-                var commandHandler = GetToggleCommentCommandHandler(workspace);
-                var textView = doc.GetTextView();
-                var textBuffer = doc.GetTextBuffer();
-
-                for (var i = 0; i < expectedText.Length; i++)
-                {
-                    commandHandler.ExecuteCommand(textView, textBuffer, ValueTuple.Create(), TestCommandExecutionContext.Create());
-                    AssertCommentResult(doc.GetTextBuffer(), textView, expectedText[i]);
-                }
-            }
-        }
-
-        protected void ToggleCommentWithProjectionBuffer(string surfaceBufferMarkup, string subjectBufferMarkup, string entireExpectedMarkup)
-        {
-            using (var workspace = GetWorkspace(subjectBufferMarkup, GetExportProvider()))
-            {
-                var document = workspace.CreateProjectionBufferDocument(surfaceBufferMarkup, workspace.Documents);
-                SetupSelection(document.GetTextView(), document.SelectedSpans.Select(s => Span.FromBounds(s.Start, s.End)));
-
-                var commandHandler = GetToggleCommentCommandHandler(workspace);
-                var textView = document.GetTextView();
-                var originalSubjectBuffer = GetBufferForContentType(ContentTypeNames.CSharpContentType, textView);
-
-                commandHandler.ExecuteCommand(textView, originalSubjectBuffer, ValueTuple.Create(), TestCommandExecutionContext.Create());
-                AssertCommentResult(textView.TextBuffer, textView, entireExpectedMarkup);
-            }
-        }
-
-        private static ExportProvider GetExportProvider()
-            => ExportProviderCache
-                .GetOrCreateExportProviderFactory(TestExportProvider.EntireAssemblyCatalogWithCSharpAndVisualBasic)
-                .CreateExportProvider();
-
         private static ITextBuffer GetBufferForContentType(string contentTypeName, ITextView textView)
             => textView.BufferGraph.GetTextBuffers(b => b.ContentType.IsOfType(contentTypeName)).Single();
 

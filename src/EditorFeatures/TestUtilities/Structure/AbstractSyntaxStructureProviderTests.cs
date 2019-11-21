@@ -27,45 +27,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Structure
 
         internal abstract Task<ImmutableArray<BlockSpan>> GetBlockSpansWorkerAsync(Document document, int position);
 
-        protected async Task VerifyBlockSpansAsync(string markupCode, params Tuple<string, string, string, bool, bool>[] expectedRegionData)
-        {
-            using (var workspace = TestWorkspace.Create(WorkspaceKind, LanguageName, compilationOptions: null, parseOptions: null, content: markupCode))
-            {
-                var hostDocument = workspace.Documents.Single();
-                workspace.Options = workspace.Options.WithChangedOption(
-                    BlockStructureOptions.MaximumBannerLength, LanguageName, 120);
-                Assert.True(hostDocument.CursorPosition.HasValue, "Test must specify a position.");
-                var position = hostDocument.CursorPosition.Value;
-
-                var expectedRegions = expectedRegionData.Select(data => CreateBlockSpan(data, hostDocument.AnnotatedSpans)).ToArray();
-
-                var document = workspace.CurrentSolution.GetDocument(hostDocument.Id);
-                var actualRegions = await GetBlockSpansAsync(document, position);
-
-                Assert.True(expectedRegions.Length == actualRegions.Length, $"Expected {expectedRegions.Length} regions but there were {actualRegions.Length}");
-
-                for (var i = 0; i < expectedRegions.Length; i++)
-                {
-                    AssertRegion(expectedRegions[i], actualRegions[i]);
-                }
-            }
-        }
-
-        protected async Task VerifyNoBlockSpansAsync(string markupCode)
-        {
-            using (var workspace = TestWorkspace.Create(WorkspaceKind, LanguageName, compilationOptions: null, parseOptions: null, content: markupCode))
-            {
-                var hostDocument = workspace.Documents.Single();
-                Assert.True(hostDocument.CursorPosition.HasValue, "Test must specify a position.");
-                var position = hostDocument.CursorPosition.Value;
-
-                var document = workspace.CurrentSolution.GetDocument(hostDocument.Id);
-                var actualRegions = await GetBlockSpansAsync(document, position);
-
-                Assert.True(actualRegions.Length == 0, $"Expected no regions but found {actualRegions.Length}.");
-            }
-        }
-
         protected Tuple<string, string, string, bool, bool> Region(string textSpanName, string hintSpanName, string bannerText, bool autoCollapse, bool isDefaultCollapsed = false)
         {
             return Tuple.Create(textSpanName, hintSpanName, bannerText, autoCollapse, isDefaultCollapsed);

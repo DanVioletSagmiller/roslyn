@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
 extern alias csc;
-extern alias vbc;
 
 using Microsoft.CodeAnalysis.CommandLine;
 using System;
@@ -181,9 +180,6 @@ namespace Microsoft.CodeAnalysis.CompilerServer.UnitTests
             {
                 case RequestLanguage.CSharpCompile:
                     func = csc.Microsoft.CodeAnalysis.CSharp.CommandLine.Program.Run;
-                    break;
-                case RequestLanguage.VisualBasicCompile:
-                    func = vbc.Microsoft.CodeAnalysis.VisualBasic.CommandLine.Program.Run;
                     break;
                 default:
                     throw new InvalidOperationException();

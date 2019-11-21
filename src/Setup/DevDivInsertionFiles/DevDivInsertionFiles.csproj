@@ -20,10 +20,8 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\..\VisualStudio\CSharp\Impl\Microsoft.VisualStudio.LanguageServices.CSharp.csproj"/>
-    <ProjectReference Include="..\..\VisualStudio\VisualBasic\Impl\Microsoft.VisualStudio.LanguageServices.VisualBasic.vbproj"/>
-    <ProjectReference Include="..\..\ExpressionEvaluator\CSharp\Source\ExpressionCompiler\Microsoft.CodeAnalysis.CSharp.ExpressionCompiler.csproj"/>
-    <ProjectReference Include="..\..\ExpressionEvaluator\VisualBasic\Source\ExpressionCompiler\Microsoft.CodeAnalysis.VisualBasic.ExpressionCompiler.vbproj"/>
+    <ProjectReference Include="..\..\VisualStudio\CSharp\Impl\Microsoft.VisualStudio.LanguageServices.CSharp.csproj" />
+    <ProjectReference Include="..\..\ExpressionEvaluator\CSharp\Source\ExpressionCompiler\Microsoft.CodeAnalysis.CSharp.ExpressionCompiler.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -45,19 +43,19 @@
         This target only unsigns them, SignTool signs them as with other unsigned files.
   -->
   <ItemGroup>
-    <ExpectedDependency Include="Humanizer.Core"/>
-    <ExpectedDependency Include="Microsoft.CodeAnalysis.AnalyzerUtilities" OptimizeAssemblies="lib/netstandard2.0/Microsoft.CodeAnalysis.AnalyzerUtilities.dll"/>
-    <ExpectedDependency Include="ICSharpCode.Decompiler"/>
-    <ExpectedDependency Include="Microsoft.DiaSymReader"/>
-    <ExpectedDependency Include="Microsoft.CodeAnalysis.Elfie"/>
+    <ExpectedDependency Include="Humanizer.Core" />
+    <ExpectedDependency Include="Microsoft.CodeAnalysis.AnalyzerUtilities" OptimizeAssemblies="lib/netstandard2.0/Microsoft.CodeAnalysis.AnalyzerUtilities.dll" />
+    <ExpectedDependency Include="ICSharpCode.Decompiler" />
+    <ExpectedDependency Include="Microsoft.DiaSymReader" />
+    <ExpectedDependency Include="Microsoft.CodeAnalysis.Elfie" />
     <ExpectedDependency Include="System.Buffers" />
     <ExpectedDependency Include="System.Collections.Immutable" OptimizeAssemblies="lib/netstandard2.0/System.Collections.Immutable.dll" UnsignAssemblies="lib/netstandard1.0/System.Collections.Immutable.dll" />
     <ExpectedDependency Include="System.Reflection.Metadata" OptimizeAssemblies="lib/netstandard2.0/System.Reflection.Metadata.dll" UnsignAssemblies="lib/netstandard1.1/System.Reflection.Metadata.dll" />
-    <ExpectedDependency Include="System.Memory"/>
+    <ExpectedDependency Include="System.Memory" />
     <ExpectedDependency Include="System.Runtime.CompilerServices.Unsafe" OptimizeAssemblies="lib/netstandard2.0/System.Runtime.CompilerServices.Unsafe.dll" />
     <!-- We do not have a training scenario that covers lib/netstandard2.0/System.Text.Encoding.CodePages.dll  -->
     <ExpectedDependency Include="System.Text.Encoding.CodePages" />
-    <ExpectedDependency Include="System.Numerics.Vectors"/>
+    <ExpectedDependency Include="System.Numerics.Vectors" />
     <!--
       Do not overwrite optimization data for this binary for now.
       This assembly is signed by Open key in CoreFX and MicroBuild does not support this key.
@@ -71,21 +69,16 @@
   <Target Name="_CalculateDependenciesToInsert" DependsOnTargets="ResolveAssemblyReferences">
     <ItemGroup>
       <!-- Take all resolved non-framework dependencies of this project that originate from a NuGet package -->
-      <_Dependency Include="@(ReferencePath->'%(NuGetPackageId)')" 
-                   Condition="'%(ReferencePath.FrameworkFile)' != 'true' and 
-                              '%(ReferencePath.NuGetPackageId)' != '' and 
-                              '%(ReferencePath.ReferenceSourceTarget)' != 'ProjectReference'" />
+      <_Dependency Include="@(ReferencePath->'%(NuGetPackageId)')" Condition="'%(ReferencePath.FrameworkFile)' != 'true' and &#xD;&#xA;                              '%(ReferencePath.NuGetPackageId)' != '' and &#xD;&#xA;                              '%(ReferencePath.ReferenceSourceTarget)' != 'ProjectReference'" />
 
       <!-- Take all additional files that get copied to the output directory and are not satellite assemblies -->
-      <_CopyLocalDependency Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')"
-                            Exclude="@(_Dependency)"
-                            Condition="'%(ReferenceCopyLocalPaths.Culture)' == ''">
+      <_CopyLocalDependency Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')" Exclude="@(_Dependency)" Condition="'%(ReferenceCopyLocalPaths.Culture)' == ''">
         <_AssemblyPath>%(ReferenceCopyLocalPaths.Identity)</_AssemblyPath>
       </_CopyLocalDependency>
     </ItemGroup>
 
     <Microsoft.DotNet.Arcade.Sdk.GetAssemblyFullName Items="@(_CopyLocalDependency)" PathMetadata="_AssemblyPath" FullNameMetadata="FusionName">
-      <Output TaskParameter="ItemsWithFullName" ItemName="_Dependency"/>
+      <Output TaskParameter="ItemsWithFullName" ItemName="_Dependency" />
     </Microsoft.DotNet.Arcade.Sdk.GetAssemblyFullName>
 
     <!--     
@@ -100,27 +93,27 @@
       <_Dependency Remove="System.ValueTuple"/>
     -->
     <ItemGroup>
-      <_Dependency Remove="@(_Dependency)" Condition="$([MSBuild]::ValueOrDefault('%(Identity)', '').StartsWith('Microsoft.VisualStudio.'))"/>
-      <_Dependency Remove="@(_Dependency)" Condition="$([MSBuild]::ValueOrDefault('%(Identity)', '').StartsWith('System.Composition.'))"/>
-      <_Dependency Remove="@(_Dependency)" Condition="$([MSBuild]::ValueOrDefault('%(Identity)', '').StartsWith('Microsoft.Internal.VisualStudio.'))"/>
-      <_Dependency Remove="EnvDTE"/>
-      <_Dependency Remove="EnvDTE80"/>
-      <_Dependency Remove="Microsoft.Build"/>
-      <_Dependency Remove="Microsoft.Build.Framework"/>
-      <_Dependency Remove="Microsoft.MSXML"/>
-      <_Dependency Remove="Newtonsoft.Json"/>
-      <_Dependency Remove="stdole"/>
-      <_Dependency Remove="StreamJsonRpc"/>
-      <_Dependency Remove="Nerdbank.Streams"/>
-      <_Dependency Remove="System.IO.Pipelines"/>
-      <_Dependency Remove="System.ValueTuple"/>
-      <_Dependency Remove="System.Threading.Tasks.Dataflow"/>
-      <_Dependency Remove="VSLangProj"/>
-      <_Dependency Remove="VSLangProj2"/>
-      <_Dependency Remove="VSLangProj80"/>
-      <_Dependency Remove="Microsoft.Win32.Registry"/>
-      <_Dependency Remove="System.Security.AccessControl"/>
-      <_Dependency Remove="System.Security.Principal.Windows"/>
+      <_Dependency Remove="@(_Dependency)" Condition="$([MSBuild]::ValueOrDefault('%(Identity)', '').StartsWith('Microsoft.VisualStudio.'))" />
+      <_Dependency Remove="@(_Dependency)" Condition="$([MSBuild]::ValueOrDefault('%(Identity)', '').StartsWith('System.Composition.'))" />
+      <_Dependency Remove="@(_Dependency)" Condition="$([MSBuild]::ValueOrDefault('%(Identity)', '').StartsWith('Microsoft.Internal.VisualStudio.'))" />
+      <_Dependency Remove="EnvDTE" />
+      <_Dependency Remove="EnvDTE80" />
+      <_Dependency Remove="Microsoft.Build" />
+      <_Dependency Remove="Microsoft.Build.Framework" />
+      <_Dependency Remove="Microsoft.MSXML" />
+      <_Dependency Remove="Newtonsoft.Json" />
+      <_Dependency Remove="stdole" />
+      <_Dependency Remove="StreamJsonRpc" />
+      <_Dependency Remove="Nerdbank.Streams" />
+      <_Dependency Remove="System.IO.Pipelines" />
+      <_Dependency Remove="System.ValueTuple" />
+      <_Dependency Remove="System.Threading.Tasks.Dataflow" />
+      <_Dependency Remove="VSLangProj" />
+      <_Dependency Remove="VSLangProj2" />
+      <_Dependency Remove="VSLangProj80" />
+      <_Dependency Remove="Microsoft.Win32.Registry" />
+      <_Dependency Remove="System.Security.AccessControl" />
+      <_Dependency Remove="System.Security.Principal.Windows" />
     </ItemGroup>
 
     <!-- Calculate metadata we need -->
@@ -137,12 +130,12 @@
       Sanity check that prevents us from accidentally inserting a new dependency without knowing.
     -->
     <ItemGroup>
-      <_RemainingDependency Include="@(_Dependency)" Exclude="@(ExpectedDependency)"/>
-      <_UninsertedExpectedDependency Include="@(ExpectedDependency)" Exclude="@(_Dependency)"/>
+      <_RemainingDependency Include="@(_Dependency)" Exclude="@(ExpectedDependency)" />
+      <_UninsertedExpectedDependency Include="@(ExpectedDependency)" Exclude="@(_Dependency)" />
     </ItemGroup>
 
-    <Error Text="Unexpected dependencies found -- update ExpectedDependency list: @(_RemainingDependency)" Condition="'@(_RemainingDependency)' != ''"/>
-    <Error Text="Missing dependencies expected to be inserted -- update ExpectedDependency list: @(_UninsertedExpectedDependency)" Condition="'@(_UninsertedExpectedDependency)' != ''"/>
+    <Error Text="Unexpected dependencies found -- update ExpectedDependency list: @(_RemainingDependency)" Condition="'@(_RemainingDependency)' != ''" />
+    <Error Text="Missing dependencies expected to be inserted -- update ExpectedDependency list: @(_UninsertedExpectedDependency)" Condition="'@(_UninsertedExpectedDependency)' != ''" />
 
     <!--
       For each relative path listed in OptimizeAssemblies and UnsignAssemblies metadata
@@ -156,9 +149,9 @@
       </ExpectedDependency>
       
       <_OptimizeAssembliesSplit Include="%(ExpectedDependency._EffectiveOptimizeAssemblies)" DependencyName="%(ExpectedDependency.Identity)" />
-      <_UnsignAssembliesSplit Include="%(ExpectedDependency.UnsignAssemblies)" DependencyName="%(ExpectedDependency.Identity)"/>
+      <_UnsignAssembliesSplit Include="%(ExpectedDependency.UnsignAssemblies)" DependencyName="%(ExpectedDependency.Identity)" />
 
-      <_DependenciesWithFullPaths Include="@(_Dependency->'%(Identity)')" Exclude="@(_OptimizeAssembliesSplit->'%(DependencyName)');@(_UnsignAssembliesSplit->'%(DependencyName)')"/>
+      <_DependenciesWithFullPaths Include="@(_Dependency->'%(Identity)')" Exclude="@(_OptimizeAssembliesSplit->'%(DependencyName)');@(_UnsignAssembliesSplit->'%(DependencyName)')" />
       <_DependenciesWithFullPaths Include="%(_OptimizeAssembliesSplit.DependencyName)" OptimizeAssembliesFullPaths="$(_OptimizedDependenciesDir)%(_OptimizeAssembliesSplit.DependencyName)\%(_OptimizeAssembliesSplit.Identity)" />
       <_DependenciesWithFullPaths Include="%(_UnsignAssembliesSplit.DependencyName)" UnsignAssembliesFullPaths="$(_OptimizedDependenciesDir)%(_UnsignAssembliesSplit.DependencyName)\%(_UnsignAssembliesSplit.Identity)" />
     </ItemGroup>
@@ -186,33 +179,24 @@
       <_UnsignAssembly Include="%(_DependencyWithExpectedMetadata.UnsignAssembliesFullPaths)" />
 
       <!-- Packages that contain optimized assembly or assembly we want to re-sign. -->
-      <_PackageToRepack Include="%(_DependencyWithExpectedMetadata._NuGetPackageDir)%(_DependencyWithExpectedMetadata._NuGetPackageFileName)"
-                        UnpackDir="$(_OptimizedDependenciesDir)%(_DependencyWithExpectedMetadata.Identity)\"
-                        Parts="%(_DependencyWithExpectedMetadata._EffectiveOptimizeAssemblies);%(_DependencyWithExpectedMetadata.UnsignAssemblies)"
-                        ReplacementFiles="%(_DependencyWithExpectedMetadata.OptimizeAssembliesFullPaths);%(_DependencyWithExpectedMetadata.UnsignAssembliesFullPaths)"
-                        Condition="'%(_DependencyWithExpectedMetadata.OptimizeAssembliesFullPaths)' != '' or '%(_DependencyWithExpectedMetadata.UnsignAssembliesFullPaths)' != ''"/>
+      <_PackageToRepack Include="%(_DependencyWithExpectedMetadata._NuGetPackageDir)%(_DependencyWithExpectedMetadata._NuGetPackageFileName)" UnpackDir="$(_OptimizedDependenciesDir)%(_DependencyWithExpectedMetadata.Identity)\" Parts="%(_DependencyWithExpectedMetadata._EffectiveOptimizeAssemblies);%(_DependencyWithExpectedMetadata.UnsignAssemblies)" ReplacementFiles="%(_DependencyWithExpectedMetadata.OptimizeAssembliesFullPaths);%(_DependencyWithExpectedMetadata.UnsignAssembliesFullPaths)" Condition="'%(_DependencyWithExpectedMetadata.OptimizeAssembliesFullPaths)' != '' or '%(_DependencyWithExpectedMetadata.UnsignAssembliesFullPaths)' != ''" />
 
       <!-- Packages that we insert without modifications -->
-      <_PackageToCopy Include="%(_DependencyWithExpectedMetadata._NuGetPackageDir)%(_DependencyWithExpectedMetadata._NuGetPackageFileName)"
-                      Exclude="@(_PackageToRepack)"/>
+      <_PackageToCopy Include="%(_DependencyWithExpectedMetadata._NuGetPackageDir)%(_DependencyWithExpectedMetadata._NuGetPackageFileName)" Exclude="@(_PackageToRepack)" />
     </ItemGroup>
   </Target>
 
   <!-- 
     Write a list of assembly names and versions that the insertion tool uses to update assembly versions in DevDiv.
   -->
-  <Target Name="_GenerateDependentAssemblyVersions" 
-          BeforeTargets="AfterBuild"
-          DependsOnTargets="_CalculateDependenciesToInsert;GetAssemblyVersion"
-          Inputs="$(MSBuildAllProjects)"
-          Outputs="$(_DependentAssemblyVersionsFile)">
+  <Target Name="_GenerateDependentAssemblyVersions" BeforeTargets="AfterBuild" DependsOnTargets="_CalculateDependenciesToInsert;GetAssemblyVersion" Inputs="$(MSBuildAllProjects)" Outputs="$(_DependentAssemblyVersionsFile)">
 
-    <MakeDir Directories="$(VisualStudioBuildPackagesDir)"/>
-    <WriteLinesToFile Lines="@(_Dependency->'%(_AssemblyName),%(_AssemblyVersion)')" File="$(_DependentAssemblyVersionsFile)" Overwrite="true"/>
+    <MakeDir Directories="$(VisualStudioBuildPackagesDir)" />
+    <WriteLinesToFile Lines="@(_Dependency->'%(_AssemblyName),%(_AssemblyVersion)')" File="$(_DependentAssemblyVersionsFile)" Overwrite="true" />
     <WriteLinesToFile Lines="Roslyn,$(AssemblyVersion)" File="$(_DependentAssemblyVersionsFile)" Overwrite="false" />
 
     <ItemGroup>
-      <FileWrites Include="$(_DependentAssemblyVersionsFile)"/>
+      <FileWrites Include="$(_DependentAssemblyVersionsFile)" />
     </ItemGroup>
   </Target>
 
@@ -226,33 +210,26 @@
   <!--
     Copy NuGet packages to be inserted into VS by the insertion tool.
   -->
-  <Target Name="_CopyPackagesToInsert"
-          BeforeTargets="AfterBuild"
-          Condition="'$(Configuration)' == 'Release' and '$(ContinuousIntegrationBuild)' == 'true'"
-          DependsOnTargets="_CalculateDependenciesToInsert;_UnpackDependencies;ApplyOptimizations">
+  <Target Name="_CopyPackagesToInsert" BeforeTargets="AfterBuild" Condition="'$(Configuration)' == 'Release' and '$(ContinuousIntegrationBuild)' == 'true'" DependsOnTargets="_CalculateDependenciesToInsert;_UnpackDependencies;ApplyOptimizations">
 
     <PropertyGroup>
       <_OptimizedNuGetPackageVersionSuffix Condition="'$(OfficialBuild)' != 'true'">vs-ci</_OptimizedNuGetPackageVersionSuffix>
       <_OptimizedNuGetPackageVersionSuffix Condition="'$(OfficialBuild)' == 'true'">vs-$(VersionSuffixDateStamp)-$(VersionSuffixBuildOfTheDayPadded)</_OptimizedNuGetPackageVersionSuffix>
     </PropertyGroup>
     
-    <MakeDir Directories="$(VisualStudioBuildPackagesDir)"/>
+    <MakeDir Directories="$(VisualStudioBuildPackagesDir)" />
 
     <!-- Unsign assemblies that need to be unsigned but not optimized. -->
     <Microsoft.DotNet.Arcade.Sdk.Unsign FilePath="%(_UnsignAssembly.Identity)" />
 
     <!-- Repack optimized dependencies -->
-    <Microsoft.DotNet.Tools.ReplacePackageParts SourcePackage="%(_PackageToRepack.Identity)"
-                                                DestinationFolder="$(VisualStudioBuildPackagesDir)"
-                                                NewVersionSuffix="$(_OptimizedNuGetPackageVersionSuffix)"
-                                                Parts="%(_PackageToRepack.Parts)"
-                                                ReplacementFiles="%(_PackageToRepack.ReplacementFiles)">
+    <Microsoft.DotNet.Tools.ReplacePackageParts SourcePackage="%(_PackageToRepack.Identity)" DestinationFolder="$(VisualStudioBuildPackagesDir)" NewVersionSuffix="$(_OptimizedNuGetPackageVersionSuffix)" Parts="%(_PackageToRepack.Parts)" ReplacementFiles="%(_PackageToRepack.ReplacementFiles)">
       <Output TaskParameter="NewPackage" ItemName="FileWrites" />
     </Microsoft.DotNet.Tools.ReplacePackageParts>
 
     <!-- Copy unoptimized dependencies -->
     <Copy SourceFiles="@(_PackageToCopy)" DestinationFolder="$(VisualStudioBuildPackagesDir)">
-      <Output TaskParameter="CopiedFiles" ItemName="FileWrites"/>
+      <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
     </Copy>
   </Target>
 </Project>

@@ -34,102 +34,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests
         private readonly DisposableTextView? _createdTextView;
         private readonly ITextBuffer _subjectBuffer;
 
-        public AbstractCommandHandlerTestState(
-            XElement workspaceElement,
-            ComposableCatalog extraParts,
-            string? workspaceKind = null)
-            : this(workspaceElement, GetExportProvider(excludedTypes: null, extraParts), workspaceKind)
-        {
-        }
-
-        /// <summary>
-        /// This can use input files with an (optionally) annotated span 'Selection' and a cursor position ($$),
-        /// and use it to create a selected span in the TextView.
-        /// 
-        /// For instance, the following will create a TextView that has a multiline selection with the cursor at the end.
-        /// 
-        /// Sub Goo
-        ///     {|Selection:SomeMethodCall()
-        ///     AnotherMethodCall()$$|}
-        /// End Sub
-        ///
-        /// You can use multiple selection spans to create box selections.
-        ///
-        /// Sub Goo
-        ///     {|Selection:$$box|}11111
-        ///     {|Selection:sel|}111
-        ///     {|Selection:ect|}1
-        ///     {|Selection:ion|}1111111
-        /// End Sub
-        /// </summary>
-        public AbstractCommandHandlerTestState(
-            XElement workspaceElement,
-            ExportProvider exportProvider,
-            string? workspaceKind,
-            bool makeSeparateBufferForCursor = false,
-            ImmutableArray<string> roles = default)
-        {
-            this.Workspace = TestWorkspace.CreateWorkspace(
-                workspaceElement,
-                exportProvider: exportProvider,
-                workspaceKind: workspaceKind);
-
-            if (makeSeparateBufferForCursor)
-            {
-                var languageName = Workspace.Projects.First().Language;
-                var contentType = Workspace.Services.GetLanguageServices(languageName).GetRequiredService<IContentTypeLanguageService>().GetDefaultContentType();
-                _createdTextView = EditorFactory.CreateView(exportProvider, contentType, roles);
-                _textView = _createdTextView.TextView;
-                _subjectBuffer = _textView.TextBuffer;
-            }
-            else
-            {
-                var cursorDocument = this.Workspace.Documents.First(d => d.CursorPosition.HasValue);
-                _textView = cursorDocument.GetTextView();
-                _subjectBuffer = cursorDocument.GetTextBuffer();
-
-                if (cursorDocument.AnnotatedSpans.TryGetValue("Selection", out var selectionSpanList))
-                {
-                    var firstSpan = selectionSpanList.First();
-                    var lastSpan = selectionSpanList.Last();
-                    var cursorPosition = cursorDocument.CursorPosition!.Value;
-
-                    Assert.True(cursorPosition == firstSpan.Start || cursorPosition == firstSpan.End
-                                || cursorPosition == lastSpan.Start || cursorPosition == lastSpan.End,
-                        "cursorPosition wasn't at an endpoint of the 'Selection' annotated span");
-
-                    _textView.Selection.Mode = selectionSpanList.Length > 1
-                        ? TextSelectionMode.Box
-                        : TextSelectionMode.Stream;
-
-                    SnapshotPoint boxSelectionStart, boxSelectionEnd;
-                    bool isReversed;
-
-                    if (cursorPosition == firstSpan.Start || cursorPosition == lastSpan.End)
-                    {
-                        // Top-left and bottom-right corners used as anchor points.
-                        boxSelectionStart = new SnapshotPoint(_subjectBuffer.CurrentSnapshot, firstSpan.Start);
-                        boxSelectionEnd = new SnapshotPoint(_subjectBuffer.CurrentSnapshot, lastSpan.End);
-                        isReversed = cursorPosition == firstSpan.Start;
-                    }
-                    else
-                    {
-                        // Top-right and bottom-left corners used as anchor points.
-                        boxSelectionStart = new SnapshotPoint(_subjectBuffer.CurrentSnapshot, firstSpan.End);
-                        boxSelectionEnd = new SnapshotPoint(_subjectBuffer.CurrentSnapshot, lastSpan.Start);
-                        isReversed = cursorPosition == firstSpan.End;
-                    }
-
-                    _textView.Selection.Select(
-                            new SnapshotSpan(boxSelectionStart, boxSelectionEnd),
-                            isReversed: isReversed);
-                }
-            }
-
-            this.EditorOperations = GetService<IEditorOperationsFactoryService>().GetEditorOperations(_textView);
-            this.UndoHistoryRegistry = GetService<ITextUndoHistoryRegistry>();
-        }
-
         public void Dispose()
         {
             _createdTextView?.Dispose();
@@ -139,22 +43,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests
         public T GetService<T>()
         {
             return Workspace.GetService<T>();
-        }
-
-        internal static ExportProvider GetExportProvider(IList<Type>? excludedTypes, ComposableCatalog extraParts)
-        {
-            excludedTypes = excludedTypes ?? Type.EmptyTypes;
-
-            if (excludedTypes.Count == 0 && (extraParts == null || extraParts.Parts.Count == 0))
-            {
-                return TestExportProvider.ExportProviderFactoryWithCSharpAndVisualBasic.CreateExportProvider();
-            }
-
-            var baseCatalog = TestExportProvider.EntireAssemblyCatalogWithCSharpAndVisualBasic;
-
-            var filteredCatalog = baseCatalog.WithoutPartsOfTypes(excludedTypes);
-
-            return ExportProviderCache.GetOrCreateExportProviderFactory(filteredCatalog.WithParts(extraParts)).CreateExportProvider();
         }
 
         public virtual ITextView TextView

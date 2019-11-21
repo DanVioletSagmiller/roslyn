@@ -37,14 +37,9 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
         private static XAttribute CreateLanguageVersionAttribute(ParseOptions parseOptions)
         {
             var csharpOptions = parseOptions as Microsoft.CodeAnalysis.CSharp.CSharpParseOptions;
-            var vbOptions = parseOptions as Microsoft.CodeAnalysis.VisualBasic.VisualBasicParseOptions;
             if (csharpOptions != null)
             {
                 return new XAttribute(LanguageVersionAttributeName, csharpOptions.LanguageVersion);
-            }
-            else if (vbOptions != null)
-            {
-                return new XAttribute(LanguageVersionAttributeName, vbOptions.LanguageVersion);
             }
             else
             {
@@ -84,15 +79,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
             if (options is CodeAnalysis.CSharp.CSharpCompilationOptions csOptions)
             {
                 element.SetAttributeValue(AllowUnsafeAttributeName, csOptions.AllowUnsafe);
-            }
-            else if (options is CodeAnalysis.VisualBasic.VisualBasicCompilationOptions vbOptions)
-            {
-                element.Add(vbOptions.GlobalImports.AsEnumerable().Select(i => new XElement(GlobalImportElementName, i.Name)));
-
-                if (vbOptions.RootNamespace != null)
-                {
-                    element.SetAttributeValue(RootNamespaceAttributeName, vbOptions.RootNamespace);
-                }
             }
 
             if (options.GeneralDiagnosticOption != ReportDiagnostic.Default)

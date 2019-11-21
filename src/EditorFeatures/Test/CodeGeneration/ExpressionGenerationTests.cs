@@ -14,9 +14,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.FalseLiteralExpression(),
                 cs: "false",
-                csSimple: "false",
-                vb: "False",
-                vbSimple: "False");
+                csSimple: "false");
         }
 
         [Fact]
@@ -25,9 +23,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.TrueLiteralExpression(),
                 cs: "true",
-                csSimple: "true",
-                vb: "True",
-                vbSimple: "True");
+                csSimple: "true");
         }
 
         [Fact]
@@ -36,9 +32,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.NullLiteralExpression(),
                 cs: "null",
-                csSimple: "null",
-                vb: "Nothing",
-                vbSimple: "Nothing");
+                csSimple: "null");
         }
 
         [Fact]
@@ -47,9 +41,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.ThisExpression(),
                 cs: "this",
-                csSimple: "this",
-                vb: "Me",
-                vbSimple: "Me");
+                csSimple: "this");
         }
 
         [Fact]
@@ -58,9 +50,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.BaseExpression(),
                 cs: "base",
-                csSimple: "base",
-                vb: "MyBase",
-                vbSimple: "MyBase");
+                csSimple: "base");
         }
 
         [Fact]
@@ -69,9 +59,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.LiteralExpression(0),
                 cs: "0",
-                csSimple: "0",
-                vb: "0",
-                vbSimple: "0");
+                csSimple: "0");
         }
 
         [Fact]
@@ -80,9 +68,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.LiteralExpression(1),
                 cs: "1",
-                csSimple: "1",
-                vb: "1",
-                vbSimple: "1");
+                csSimple: "1");
         }
 
         [Fact]
@@ -91,9 +77,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.LiteralExpression(0L),
                 cs: "0L",
-                csSimple: "0L",
-                vb: "0L",
-                vbSimple: "0L");
+                csSimple: "0L");
         }
 
         [Fact]
@@ -102,9 +86,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.LiteralExpression(1L),
                 cs: "1L",
-                csSimple: "1L",
-                vb: "1L",
-                vbSimple: "1L");
+                csSimple: "1L");
         }
 
         [Fact]
@@ -113,9 +95,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.LiteralExpression(0.0f),
                 cs: "0F",
-                csSimple: "0F",
-                vb: "0F",
-                vbSimple: "0F");
+                csSimple: "0F");
         }
 
         [Fact]
@@ -124,9 +104,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.LiteralExpression(0.5F),
                 cs: "0.5F",
-                csSimple: "0.5F",
-                vb: "0.5F",
-                vbSimple: "0.5F");
+                csSimple: "0.5F");
         }
 
         [Fact]
@@ -135,9 +113,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.LiteralExpression(0.0d),
                 cs: "0D",
-                csSimple: "0D",
-                vb: "0R",
-                vbSimple: "0R");
+                csSimple: "0D");
         }
 
         [Fact]
@@ -146,9 +122,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Test(
                 f => f.LiteralExpression(0.5D),
                 cs: "0.5D",
-                csSimple: "0.5D",
-                vb: "0.5R",
-                vbSimple: "0.5R");
+                csSimple: "0.5D");
         }
 
         [Fact]
@@ -159,9 +133,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.LiteralExpression(1),
                     f.LiteralExpression(2)),
                 cs: "(1) + (2)",
-                csSimple: "1 + 2",
-                vb: "(1) + (2)",
-                vbSimple: "1 + 2");
+                csSimple: "1 + 2");
         }
 
         [Fact]
@@ -174,9 +146,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                         f.LiteralExpression(2),
                         f.LiteralExpression(3))),
                 cs: "(1) + ((2) + (3))",
-                csSimple: "1 + 2 + 3",
-                vb: "(1) + ((2) + (3))",
-                vbSimple: "1 + 2 + 3");
+                csSimple: "1 + 2 + 3");
         }
 
         [Fact]
@@ -189,9 +159,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                         f.LiteralExpression(2)),
                     f.LiteralExpression(3)),
                 cs: "((1) + (2)) + (3)",
-                csSimple: "1 + 2 + 3",
-                vb: "((1) + (2)) + (3)",
-                vbSimple: "1 + 2 + 3");
+                csSimple: "1 + 2 + 3");
         }
 
         [Fact]
@@ -202,9 +170,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.LiteralExpression(1),
                     f.LiteralExpression(2)),
                 cs: "(1) * (2)",
-                csSimple: "1 * 2",
-                vb: "(1) * (2)",
-                vbSimple: "1 * 2");
+                csSimple: "1 * 2");
         }
 
         [Fact]
@@ -217,9 +183,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                         f.LiteralExpression(2),
                         f.LiteralExpression(3))),
                 cs: "(1) * ((2) * (3))",
-                csSimple: "1 * 2 * 3",
-                vb: "(1) * ((2) * (3))",
-                vbSimple: "1 * 2 * 3");
+                csSimple: "1 * 2 * 3");
         }
 
         [Fact]
@@ -232,9 +196,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                         f.LiteralExpression(2)),
                     f.LiteralExpression(3)),
                 cs: "((1) * (2)) * (3)",
-                csSimple: "1 * 2 * 3",
-                vb: "((1) * (2)) * (3)",
-                vbSimple: "1 * 2 * 3");
+                csSimple: "1 * 2 * 3");
         }
 
         [Fact]
@@ -245,9 +207,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.LiteralExpression(1),
                     f.LiteralExpression(2)),
                 cs: "(1) & (2)",
-                csSimple: "1 & 2",
-                vb: "(1) And (2)",
-                vbSimple: "1 And 2");
+                csSimple: "1 & 2");
         }
 
         [Fact]
@@ -258,9 +218,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.LiteralExpression(1),
                     f.LiteralExpression(2)),
                 cs: "(1) | (2)",
-                csSimple: "1 | 2",
-                vb: "(1) Or (2)",
-                vbSimple: "1 Or 2");
+                csSimple: "1 | 2");
         }
 
         [Fact]
@@ -271,9 +229,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.LiteralExpression(1),
                     f.LiteralExpression(2)),
                 cs: "(1) && (2)",
-                csSimple: "1 && 2",
-                vb: "(1) AndAlso (2)",
-                vbSimple: "1 AndAlso 2");
+                csSimple: "1 && 2");
         }
 
         [Fact]
@@ -284,9 +240,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.LiteralExpression(1),
                     f.LiteralExpression(2)),
                 cs: "(1) || (2)",
-                csSimple: "1 || 2",
-                vb: "(1) OrElse (2)",
-                vbSimple: "1 OrElse 2");
+                csSimple: "1 || 2");
         }
 
         [Fact]
@@ -297,9 +251,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.IdentifierName("E"),
                     f.IdentifierName("M")),
                 cs: "E.M",
-                csSimple: "E.M",
-                vb: "E.M",
-                vbSimple: "E.M");
+                csSimple: "E.M");
         }
 
         [Fact]
@@ -311,9 +263,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.IdentifierName("T"),
                     f.IdentifierName("F")),
                 cs: "(E) ? (T) : (F)",
-                csSimple: "E ? T : F",
-                vb: "If(E, T, F)",
-                vbSimple: "If(E, T, F)");
+                csSimple: "E ? T : F");
         }
 
         [Fact]
@@ -323,9 +273,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                 f => f.InvocationExpression(
                     f.IdentifierName("E")),
                 cs: "E()",
-                csSimple: "E()",
-                vb: "E()",
-                vbSimple: "E");
+                csSimple: "E()");
         }
 
         [Fact]
@@ -336,9 +284,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.IdentifierName("E"),
                     f.Argument(f.IdentifierName("a"))),
                 cs: "E(a)",
-                csSimple: "E(a)",
-                vb: "E(a)",
-                vbSimple: "E(a)");
+                csSimple: "E(a)");
         }
 
         [Fact]
@@ -349,9 +295,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.IdentifierName("E"),
                     f.Argument("n", RefKind.None, f.IdentifierName("a"))),
                 cs: "E(n: a)",
-                csSimple: "E(n: a)",
-                vb: "E(n:=a)",
-                vbSimple: "E(n:=a)");
+                csSimple: "E(n: a)");
         }
 
         [Fact]
@@ -363,9 +307,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.Argument(null, RefKind.Out, f.IdentifierName("a")),
                     f.Argument(null, RefKind.Ref, f.IdentifierName("b"))),
                 cs: "E(out a, ref b)",
-                csSimple: "E(out a, ref b)",
-                vb: "E(a, b)",
-                vbSimple: "E(a, b)");
+                csSimple: "E(out a, ref b)");
         }
 
         [Fact]
@@ -377,9 +319,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.Argument("n1", RefKind.Out, f.IdentifierName("a")),
                     f.Argument("n2", RefKind.Ref, f.IdentifierName("b"))),
                 cs: "E(n1: out a, n2: ref b)",
-                csSimple: "E(n1: out a, n2: ref b)",
-                vb: "E(n1:=a, n2:=b)",
-                vbSimple: "E(n1:=a, n2:=b)");
+                csSimple: "E(n1: out a, n2: ref b)");
         }
 
         [Fact]
@@ -389,9 +329,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                 f => f.ElementAccessExpression(
                     f.IdentifierName("E")),
                 cs: "E[]",
-                csSimple: "E[]",
-                vb: "E()",
-                vbSimple: "E");
+                csSimple: "E[]");
         }
 
         [Fact]
@@ -402,9 +340,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.IdentifierName("E"),
                     f.Argument(f.IdentifierName("a"))),
                 cs: "E[a]",
-                csSimple: "E[a]",
-                vb: "E(a)",
-                vbSimple: "E(a)");
+                csSimple: "E[a]");
         }
 
         [Fact]
@@ -415,9 +351,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.IdentifierName("E"),
                     f.Argument("n", RefKind.None, f.IdentifierName("a"))),
                 cs: "E[n: a]",
-                csSimple: "E[n: a]",
-                vb: "E(n:=a)",
-                vbSimple: "E(n:=a)");
+                csSimple: "E[n: a]");
         }
 
         [Fact]
@@ -429,9 +363,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.Argument(null, RefKind.Out, f.IdentifierName("a")),
                     f.Argument(null, RefKind.Ref, f.IdentifierName("b"))),
                 cs: "E[out a, ref b]",
-                csSimple: "E[out a, ref b]",
-                vb: "E(a, b)",
-                vbSimple: "E(a, b)");
+                csSimple: "E[out a, ref b]");
         }
 
         [Fact]
@@ -443,9 +375,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.Argument("n1", RefKind.Out, f.IdentifierName("a")),
                     f.Argument("n2", RefKind.Ref, f.IdentifierName("b"))),
                 cs: "E[n1: out a, n2: ref b]",
-                csSimple: "E[n1: out a, n2: ref b]",
-                vb: "E(n1:=a, n2:=b)",
-                vbSimple: "E(n1:=a, n2:=b)");
+                csSimple: "E[n1: out a, n2: ref b]");
         }
 
         [Fact]
@@ -456,9 +386,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.IdentifierName("a"),
                     CreateClass("SomeType")),
                 cs: "(a) is SomeType",
-                csSimple: "a is SomeType",
-                vb: "TypeOf (a) Is SomeType",
-                vbSimple: "TypeOf a Is SomeType");
+                csSimple: "a is SomeType");
         }
 
         [Fact]
@@ -469,9 +397,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     f.IdentifierName("a"),
                     CreateClass("SomeType")),
                 cs: "(a) as SomeType",
-                csSimple: "a as SomeType",
-                vb: "TryCast(a, SomeType)",
-                vbSimple: "TryCast(a, SomeType)");
+                csSimple: "a as SomeType");
         }
 
         [Fact]
@@ -481,9 +407,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                 f => f.LogicalNotExpression(
                     f.IdentifierName("a")),
                 cs: "!(a)",
-                csSimple: "!a",
-                vb: "Not (a)",
-                vbSimple: "Not a");
+                csSimple: "!a");
         }
 
         [Fact]
@@ -494,9 +418,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                     CreateClass("SomeType"),
                     f.IdentifierName("a")),
                 cs: "(SomeType)(a)",
-                csSimple: "(SomeType)a",
-                vb: "DirectCast(a, SomeType)",
-                vbSimple: "DirectCast(a, SomeType)");
+                csSimple: "(SomeType)a");
         }
 
         [Fact]
@@ -506,9 +428,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
                 f => f.NegateExpression(
                     f.IdentifierName("a")),
                 cs: "-(a)",
-                csSimple: "-a",
-                vb: "-(a)",
-                vbSimple: "-a");
+                csSimple: "-a");
         }
     }
 }
